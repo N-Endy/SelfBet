@@ -1,3 +1,6 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using SelfBet.Api.Configuration;
 using SelfBet.Api.Endpoints;
@@ -8,6 +11,12 @@ using SelfBet.Infrastructure;
 using SelfBet.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.Configure<JsonOptions>(opt =>
+{
+    opt.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    opt.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
 builder.Services.Configure<SchedulerOptions>(builder.Configuration.GetSection("Scheduler"));
 builder.Services.AddSelfBetApplication();

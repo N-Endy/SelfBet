@@ -5,20 +5,23 @@
 <PageTitle>Today | SelfBet</PageTitle>
 
 <div class="page-header">
-    <h1>Today's Slips</h1>
+    <div>
+        <h1>Today</h1>
+        <p class="muted" style="margin-top: 4px;">Live status, balance, and today's slips from SportyBet.</p>
+    </div>
     <div class="actions">
         <button class="btn btn-primary" @onclick="ExecuteRun" disabled="@isRunning">
-            @(isRunning ? "⏳ Running..." : "▶ Generate Now")
+            @(isRunning ? "Running..." : "Generate Now")
         </button>
         @if (config is not null)
         {
             @if (config.AutomationEnabled)
             {
-                <button class="btn btn-warning" @onclick="StopAutomation">⏹ Stop Automation</button>
+                <button class="btn btn-warning" @onclick="StopAutomation">Stop Automation</button>
             }
             else
             {
-                <button class="btn btn-success" @onclick="StartAutomation">▷ Start Automation</button>
+                <button class="btn btn-success" @onclick="StartAutomation">Start Automation</button>
             }
         }
     </div>
@@ -66,14 +69,16 @@
     </div>
 }
 
-<h2>Today's Slips</h2>
+<div class="section-header">Today's Slips</div>
 @if (slips is null)
 {
     <p class="loading">Loading...</p>
 }
 else if (slips.Count == 0)
 {
-    <p class="muted">No slips yet. Click "Generate Now" or wait for the scheduled 08:00 / 16:00 run.</p>
+    <div class="empty-state">
+        No slips yet. Click "Generate Now" or wait for the scheduled 08:00 / 16:00 run.
+    </div>
 }
 else
 {
@@ -98,10 +103,10 @@ else
                     <div class="booking-code-label">SportyBet Booking Code</div>
                     <div class="booking-code-row">
                         <span class="booking-code">@slip.BookingCode</span>
-                        <button class="btn btn-sm btn-ghost" @onclick="() => CopyToClipboard(slip.BookingCode!)">📋 Copy</button>
+                        <button class="btn btn-sm btn-ghost" @onclick="() => CopyToClipboard(slip.BookingCode!)">Copy</button>
                         @if (!string.IsNullOrEmpty(slip.BookingUrl))
                         {
-                            <a class="btn btn-sm btn-primary" href="@slip.BookingUrl" target="_blank">📱 Open in App</a>
+                            <a class="btn btn-sm btn-primary" href="@slip.BookingUrl" target="_blank">Open in App</a>
                         }
                     </div>
                     <div class="booking-hint">Enter this code on SportyBet to load the slip, then tap Place Bet.</div>
@@ -142,7 +147,7 @@ else
                 }
                 @if (!string.IsNullOrEmpty(slip.FailureReason))
                 {
-                    <span class="failure">⚠ @slip.FailureReason</span>
+                    <span class="failure">@slip.FailureReason</span>
                 }
             </div>
         </div>

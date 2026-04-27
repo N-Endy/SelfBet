@@ -3,19 +3,19 @@
 
 <PageTitle>Runs | SelfBet</PageTitle>
 
-<h1>Runs</h1>
+<div class="page-header"><h1>Runs</h1></div>
 
 @if (runs is null)
 {
-    <p>Loading...</p>
+    <p class="loading">Loading...</p>
 }
 else if (runs.Count == 0)
 {
-    <p class="muted">No runs recorded yet.</p>
+    <div class="empty-state">No runs recorded yet.</div>
 }
 else
 {
-    <table class="data">
+    <table class="data-table">
         <thead>
             <tr>
                 <th>Started</th>
@@ -32,12 +32,12 @@ else
         {
             <tr>
                 <td>@r.StartedAtUtc.LocalDateTime.ToString("yyyy-MM-dd HH:mm")</td>
-                <td>@r.Trigger</td>
-                <td><span class="status status-@r.Status.ToLower()">@r.Status</span></td>
+                <td><span class="market-badge">@r.Trigger</span></td>
+                <td><span class="badge badge-@r.Status.ToLower()">@r.Status</span></td>
                 <td>@r.FixturesEvaluated</td>
                 <td>@r.CandidatesGenerated</td>
-                <td>@r.SlipsBuilt</td>
-                <td>@r.Message</td>
+                <td><strong>@r.SlipsBuilt</strong></td>
+                <td class="muted">@r.Message</td>
             </tr>
         }
         </tbody>

@@ -3,66 +3,98 @@
 
 <PageTitle>Strategy | SelfBet</PageTitle>
 
-<h1>Strategy Configuration</h1>
+<div class="page-header"><h1>Strategy Configuration</h1></div>
 
 @if (config is null)
 {
-    <p>Loading...</p>
+    <p class="loading">Loading...</p>
 }
 else
 {
     <EditForm Model="config" OnValidSubmit="Save" FormName="config">
-        <div class="form-grid">
-            <label>Min total odds</label>
-            <InputNumber @bind-Value="config.OddsRangeMin" />
-
-            <label>Max total odds</label>
-            <InputNumber @bind-Value="config.OddsRangeMax" />
-
-            <label>Stake % per slip</label>
-            <InputNumber @bind-Value="config.StakePercentagePerSlip" />
-
-            <label>Slips per day</label>
-            <InputNumber @bind-Value="config.SlipsPerDay" />
-
-            <label>Min legs / slip</label>
-            <InputNumber @bind-Value="config.MinLegsPerSlip" />
-
-            <label>Max legs / slip</label>
-            <InputNumber @bind-Value="config.MaxLegsPerSlip" />
-
-            <label>Min edge threshold</label>
-            <InputNumber @bind-Value="config.MinEdgeThreshold" />
-
-            <label>Min leg odds</label>
-            <InputNumber @bind-Value="config.MinLegOdds" />
-
-            <label>Max leg odds</label>
-            <InputNumber @bind-Value="config.MaxLegOdds" />
-
-            <label>Stake increment</label>
-            <InputNumber @bind-Value="config.StakeIncrement" />
-
-            <label>Automation enabled</label>
-            <InputCheckbox @bind-Value="config.AutomationEnabled" />
-
-            <label>Require confirmation on risk</label>
-            <InputCheckbox @bind-Value="config.RequireConfirmationOnRisk" />
-
-            <label>Enabled leagues (comma)</label>
-            <InputText @bind-Value="enabledLeaguesText" />
-
-            <label>Allowed markets (comma)</label>
-            <InputText @bind-Value="allowedMarketsText" />
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="section-header" style="margin-top: 0;">Slip targeting</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Min total odds</label>
+                    <InputNumber class="form-control" @bind-Value="config.OddsRangeMin" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Max total odds</label>
+                    <InputNumber class="form-control" @bind-Value="config.OddsRangeMax" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Slips per day</label>
+                    <InputNumber class="form-control" @bind-Value="config.SlipsPerDay" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Stake % per slip</label>
+                    <InputNumber class="form-control" @bind-Value="config.StakePercentagePerSlip" />
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Min legs / slip</label>
+                    <InputNumber class="form-control" @bind-Value="config.MinLegsPerSlip" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Max legs / slip</label>
+                    <InputNumber class="form-control" @bind-Value="config.MaxLegsPerSlip" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Min edge threshold</label>
+                    <InputNumber class="form-control" @bind-Value="config.MinEdgeThreshold" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Stake increment</label>
+                    <InputNumber class="form-control" @bind-Value="config.StakeIncrement" />
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Min leg odds</label>
+                    <InputNumber class="form-control" @bind-Value="config.MinLegOdds" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Max leg odds</label>
+                    <InputNumber class="form-control" @bind-Value="config.MaxLegOdds" />
+                </div>
+            </div>
         </div>
 
-        <button type="submit" class="btn btn-primary">Save</button>
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="section-header" style="margin-top: 0;">Automation</div>
+            <div class="form-row">
+                <label class="form-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <InputCheckbox @bind-Value="config.AutomationEnabled" />
+                    Automation enabled (twice-daily scheduler)
+                </label>
+                <label class="form-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <InputCheckbox @bind-Value="config.RequireConfirmationOnRisk" />
+                    Require confirmation on risk
+                </label>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="section-header" style="margin-top: 0;">Filters</div>
+            <div class="form-group">
+                <label class="form-label">Enabled leagues (comma-separated)</label>
+                <InputText class="form-control" @bind-Value="enabledLeaguesText" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Allowed markets (comma-separated)</label>
+                <InputText class="form-control" @bind-Value="allowedMarketsText" />
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save changes</button>
     </EditForm>
 }
 
 @if (message is not null)
 {
-    <p class="banner">@message</p>
+    <div class="banner banner-success" style="margin-top: 16px;">@message</div>
 }
 
 @code {

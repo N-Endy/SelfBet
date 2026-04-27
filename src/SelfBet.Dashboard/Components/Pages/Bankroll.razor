@@ -3,37 +3,51 @@
 
 <PageTitle>Bankroll | SelfBet</PageTitle>
 
-<h1>Bankroll</h1>
+<div class="page-header"><h1>Bankroll</h1></div>
 
 @if (snapshot is null)
 {
-    <p>Loading...</p>
+    <p class="loading">Loading...</p>
 }
 else
 {
     <div class="cards">
-        <div class="card"><div class="card-label">Balance</div><div class="card-value">@snapshot.Balance.ToString("N0") <span class="unit">@snapshot.Currency</span></div></div>
-        <div class="card"><div class="card-label">Stake / slip (2%)</div><div class="card-value">@snapshot.StakePerSlip.ToString("N0")</div></div>
-        <div class="card"><div class="card-label">Captured</div><div class="card-value">@snapshot.CapturedAtUtc.LocalDateTime.ToString("yyyy-MM-dd HH:mm")</div></div>
+        <div class="card">
+            <div class="card-label">Balance</div>
+            <div class="card-value">₦@snapshot.Balance.ToString("N0") <span class="unit">@snapshot.Currency</span></div>
+        </div>
+        <div class="card">
+            <div class="card-label">Stake / slip (2%)</div>
+            <div class="card-value">₦@snapshot.StakePerSlip.ToString("N0")</div>
+        </div>
+        <div class="card">
+            <div class="card-label">Captured</div>
+            <div class="card-value" style="font-size: 1rem;">@snapshot.CapturedAtUtc.LocalDateTime.ToString("yyyy-MM-dd HH:mm")</div>
+        </div>
     </div>
 }
 
-<h2>Capture new snapshot</h2>
-<EditForm Model="this" OnValidSubmit="HandleSubmit" FormName="capture">
-    <div class="form-row">
-        <label>Balance (NGN)</label>
-        <InputNumber @bind-Value="balance" />
-    </div>
-    <div class="form-row">
-        <label>Note</label>
-        <InputText @bind-Value="note" />
-    </div>
-    <button type="submit" class="btn btn-primary">Capture</button>
-</EditForm>
+<div class="section-header">Capture new snapshot</div>
+
+<div class="card">
+    <EditForm Model="this" OnValidSubmit="HandleSubmit" FormName="capture">
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Balance (NGN)</label>
+                <InputNumber class="form-control" @bind-Value="balance" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Note</label>
+                <InputText class="form-control" @bind-Value="note" />
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Capture snapshot</button>
+    </EditForm>
+</div>
 
 @if (message is not null)
 {
-    <p class="banner">@message</p>
+    <div class="banner banner-success" style="margin-top: 16px;">@message</div>
 }
 
 @code {

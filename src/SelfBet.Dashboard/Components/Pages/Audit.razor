@@ -3,19 +3,19 @@
 
 <PageTitle>Audit | SelfBet</PageTitle>
 
-<h1>Audit Trail</h1>
+<div class="page-header"><h1>Audit Trail</h1></div>
 
 @if (events is null)
 {
-    <p>Loading...</p>
+    <p class="loading">Loading...</p>
 }
 else if (events.Count == 0)
 {
-    <p class="muted">No audit events yet.</p>
+    <div class="empty-state">No audit events yet.</div>
 }
 else
 {
-    <table class="data">
+    <table class="data-table">
         <thead>
             <tr>
                 <th>Time</th>
@@ -29,9 +29,9 @@ else
         {
             <tr>
                 <td>@e.OccurredAtUtc.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                <td>@e.EventType</td>
+                <td><span class="market-badge">@e.EventType</span></td>
                 <td>@e.Message</td>
-                <td><code>@e.MetadataJson</code></td>
+                <td class="muted" style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;">@e.MetadataJson</td>
             </tr>
         }
         </tbody>
