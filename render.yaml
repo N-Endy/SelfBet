@@ -52,7 +52,4 @@ services:
       - key: ASPNETCORE_URLS
         value: http://+:8090
       - key: Api__BaseUrl
-        fromService:
-          type: web
-          name: selfbet-api
-          property: hostport
+        value: https://selfbet-api.onrender.com
