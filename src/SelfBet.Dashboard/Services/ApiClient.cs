@@ -73,16 +73,49 @@ public sealed class ApiClient(HttpClient httpClient)
     public Task<List<SlipDto>?> GetTodaySlipsAsync(CancellationToken ct = default) =>
         httpClient.GetFromJsonAsync<List<SlipDto>>("/api/slips/today", JsonOptions, ct);
 
-    public async Task<bool> PlaceSlipAsync(Guid slipId, CancellationToken ct = default)
+    public async Task<SlipActionClientResult> PlaceSlipAsync(Guid slipId, CancellationToken ct = default) =>
+        await ReadSlipActionResultAsync(
+            await httpClient.PostAsync($"/api/slips/{slipId}/place", null, ct), ct);
+
+    public async Task<SlipActionClientResult> CancelSlipAsync(Guid slipId, CancellationToken ct = default) =>
+        await ReadSlipActionResultAsync(
+            await httpClient.PostAsync($"/api/slips/{slipId}/cancel", null, ct), ct);
+
+    private static async Task<SlipActionClientResult> ReadSlipActionResultAsync(
+        HttpResponseMessage response,
+        CancellationToken ct)
     {
-        var response = await httpClient.PostAsync($"/api/slips/{slipId}/place", null, ct);
-        return response.IsSuccessStatusCode;
+        var text = await response.Content.ReadAsStringAsync(ct);
+        var message = TryGetJsonMessageProperty(text);
+        if (string.IsNullOrEmpty(message) && !string.IsNullOrWhiteSpace(text) && !response.IsSuccessStatusCode)
+        {
+            message = text;
+        }
+        if (string.IsNullOrEmpty(message) && !response.IsSuccessStatusCode)
+        {
+            message = $"HTTP {(int)response.StatusCode} {response.ReasonPhrase}";
+        }
+        return new SlipActionClientResult(response.IsSuccessStatusCode, message);
     }
 
-    public async Task<bool> CancelSlipAsync(Guid slipId, CancellationToken ct = default)
+    private static string? TryGetJsonMessageProperty(string? json)
     {
-        var response = await httpClient.PostAsync($"/api/slips/{slipId}/cancel", null, ct);
-        return response.IsSuccessStatusCode;
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try
+        {
+            using var d = JsonDocument.Parse(json);
+            if (d.RootElement.ValueKind == JsonValueKind.Object
+                && d.RootElement.TryGetProperty("message", out var p)
+                && p.ValueKind == JsonValueKind.String)
+            {
+                return p.GetString();
+            }
+        }
+        catch
+        {
+            // ignore
+        }
+        return null;
     }
 
     public Task<BankrollSnapshotDto?> GetBankrollAsync(CancellationToken ct = default) =>

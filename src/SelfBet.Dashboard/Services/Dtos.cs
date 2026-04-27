@@ -104,6 +104,8 @@ public sealed class PerformanceSummaryDto
     public DateTimeOffset GeneratedAtUtc { get; set; }
 }
 
+public readonly record struct SlipActionClientResult(bool Success, string? Message);
+
 public sealed class AuditEventDto
 {
     public Guid Id { get; set; }

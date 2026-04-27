@@ -53,7 +53,7 @@
 
 @if (lastRunMessage is not null)
 {
-    <div class="banner @(lastRunMessage.StartsWith("Error") || lastRunMessage.StartsWith("Run failed") ? "banner-error" : "")">
+    <div class="banner @(!string.IsNullOrEmpty(lastRunBannerClass) ? lastRunBannerClass : (lastRunMessage.StartsWith("Error") || lastRunMessage.Contains(" failed:") || lastRunMessage.Contains("Could not") ? "banner-error" : ""))">
         @lastRunMessage
     </div>
 }
@@ -146,8 +146,8 @@ else
             <div class="slip-actions">
                 @if (slip.Status is "Ready" or "AwaitingConfirmation")
                 {
-                    <button class="btn btn-sm btn-primary" @onclick="() => Place(slip.Id)">Place Slip</button>
-                    <button class="btn btn-sm btn-ghost" @onclick="() => Cancel(slip.Id)">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-primary" disabled="@(isSlipAction)" @onclick="() => Place(slip.Id)">Place Slip</button>
+                    <button type="button" class="btn btn-sm btn-ghost" disabled="@(isSlipAction)" @onclick="() => Cancel(slip.Id)">Cancel</button>
                 }
                 @if (!string.IsNullOrEmpty(slip.FailureReason))
                 {
@@ -165,6 +165,8 @@ else
     private bool isRunning;
     private bool isTogglingAutomation;
     private string? lastRunMessage;
+    private string? lastRunBannerClass;
+    private bool isSlipAction;
     private bool otpRequired;
     private string? otpCode;
 
@@ -181,6 +183,7 @@ else
         catch (Exception ex)
         {
             lastRunMessage = $"Error loading dashboard: {ex.Message}";
+            lastRunBannerClass = "banner-error";
         }
     }
 
@@ -188,6 +191,7 @@ else
     {
         isRunning = true;
         lastRunMessage = null;
+        lastRunBannerClass = null;
         try
         {
             var outcome = await Api.ExecuteRunAsync();
@@ -197,6 +201,7 @@ else
         catch (Exception ex)
         {
             lastRunMessage = $"Run failed: {ex.Message}";
+            lastRunBannerClass = "banner-error";
         }
         finally
         {
@@ -208,6 +213,7 @@ else
     {
         isTogglingAutomation = true;
         lastRunMessage = null;
+        lastRunBannerClass = null;
         try
         {
             config = await Api.ToggleAutomationAsync(true);
@@ -217,6 +223,7 @@ else
         catch (Exception ex)
         {
             lastRunMessage = $"Could not start automation: {ex.Message}";
+            lastRunBannerClass = "banner-error";
         }
         finally
         {
@@ -228,6 +235,7 @@ else
     {
         isTogglingAutomation = true;
         lastRunMessage = null;
+        lastRunBannerClass = null;
         try
         {
             config = await Api.ToggleAutomationAsync(false);
@@ -237,6 +245,7 @@ else
         catch (Exception ex)
         {
             lastRunMessage = $"Could not stop automation: {ex.Message}";
+            lastRunBannerClass = "banner-error";
         }
         finally
         {
@@ -246,14 +255,52 @@ else
 
     private async Task Place(Guid slipId)
     {
-        await Api.PlaceSlipAsync(slipId);
-        await Reload();
+        isSlipAction = true;
+        lastRunMessage = null;
+        lastRunBannerClass = null;
+        try
+        {
+            var r = await Api.PlaceSlipAsync(slipId);
+            lastRunMessage = r.Success
+                ? (r.Message ?? "Slip updated.")
+                : (r.Message ?? "Could not place slip.");
+            lastRunBannerClass = r.Success ? null : "banner-error";
+        }
+        catch (Exception ex)
+        {
+            lastRunMessage = $"Place slip failed: {ex.Message}";
+            lastRunBannerClass = "banner-error";
+        }
+        finally
+        {
+            isSlipAction = false;
+            await Reload();
+        }
     }
 
     private async Task Cancel(Guid slipId)
     {
-        await Api.CancelSlipAsync(slipId);
-        await Reload();
+        isSlipAction = true;
+        lastRunMessage = null;
+        lastRunBannerClass = null;
+        try
+        {
+            var r = await Api.CancelSlipAsync(slipId);
+            lastRunMessage = r.Success
+                ? (r.Message ?? "Slip cancelled.")
+                : (r.Message ?? "Could not cancel slip.");
+            lastRunBannerClass = r.Success ? null : "banner-error";
+        }
+        catch (Exception ex)
+        {
+            lastRunMessage = $"Cancel failed: {ex.Message}";
+            lastRunBannerClass = "banner-error";
+        }
+        finally
+        {
+            isSlipAction = false;
+            await Reload();
+        }
     }
 
     private async Task CopyToClipboard(string text)

@@ -23,14 +23,18 @@ public static class SlipEndpoints
 
         group.MapPost("/{slipId:guid}/place", async (Guid slipId, PlaceSlipUseCase useCase, CancellationToken ct) =>
         {
-            var success = await useCase.ExecuteAsync(slipId, ct);
-            return success ? Results.Ok(new { slipId, status = "placed" }) : Results.BadRequest(new { slipId, status = "failed" });
+            var result = await useCase.ExecuteAsync(slipId, ct);
+            return result.Ok
+                ? Results.Ok(new { slipId, status = "ok", message = result.Message })
+                : Results.BadRequest(new { slipId, status = "failed", message = result.Message });
         });
 
         group.MapPost("/{slipId:guid}/cancel", async (Guid slipId, CancelSlipUseCase useCase, CancellationToken ct) =>
         {
-            var success = await useCase.ExecuteAsync(slipId, ct);
-            return success ? Results.Ok(new { slipId, status = "cancelled" }) : Results.BadRequest(new { slipId, status = "not-cancellable" });
+            var result = await useCase.ExecuteAsync(slipId, ct);
+            return result.Ok
+                ? Results.Ok(new { slipId, status = "cancelled", message = result.Message })
+                : Results.BadRequest(new { slipId, status = "not-cancellable", message = result.Message });
         });
 
         return app;
