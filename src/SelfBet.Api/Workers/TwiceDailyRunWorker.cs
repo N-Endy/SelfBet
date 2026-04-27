@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using SelfBet.Api.Configuration;
+using SelfBet.Application.Abstractions;
 using SelfBet.Application.UseCases;
 
 namespace SelfBet.Api.Workers;
@@ -57,7 +58,17 @@ public sealed class TwiceDailyRunWorker(
         try
         {
             using var scope = scopeFactory.CreateScope();
-            var engine = scope.ServiceProvider.GetRequiredService<RunEngine>();
+            var sp = scope.ServiceProvider;
+            var strategy = sp.GetRequiredService<IStrategyConfigRepository>();
+            var cfg = await strategy.GetAsync(cancellationToken);
+            if (!cfg.AutomationEnabled)
+            {
+                logger.LogInformation(
+                    "Scheduled run skipped: automation is OFF (use dashboard Start Automation or Config).");
+                return;
+            }
+
+            var engine = sp.GetRequiredService<RunEngine>();
             var outcome = await engine.ExecuteAsync("scheduler", cancellationToken);
             logger.LogInformation("Scheduled run {RunId} completed with status {Status}", outcome.Run.Id, outcome.Status);
         }

@@ -10,21 +10,25 @@
         <p class="muted" style="margin-top: 4px;">Live status, balance, and today's slips from SportyBet.</p>
     </div>
     <div class="actions">
-        <button class="btn btn-primary" @onclick="ExecuteRun" disabled="@isRunning">
+        <button type="button" class="btn btn-primary" @onclick="ExecuteRun" disabled="@(isRunning || isTogglingAutomation)">
             @(isRunning ? "Running..." : "Generate Now")
         </button>
         @if (config is not null)
         {
             @if (config.AutomationEnabled)
             {
-                <button class="btn btn-warning" @onclick="StopAutomation">Stop Automation</button>
+                <button type="button" class="btn btn-warning" @onclick="StopAutomation" disabled="@isTogglingAutomation">Stop Automation</button>
             }
             else
             {
-                <button class="btn btn-success" @onclick="StartAutomation">Start Automation</button>
+                <button type="button" class="btn btn-success" @onclick="StartAutomation" disabled="@isTogglingAutomation">Start Automation</button>
             }
         }
     </div>
+    <p class="muted" style="margin-top: 10px; font-size: 0.85rem; max-width: 640px;">
+        <strong>Generate Now</strong> calls the API to evaluate today’s fixtures and build slips immediately (trigger <code>manual</code>).
+        <strong>Start / Stop Automation</strong> turns the twice-daily scheduled runs (08:00 and 16:00 Africa/Lagos) on or off — they do not run when automation is off.
+    </p>
 </div>
 
 <div class="cards">
@@ -159,6 +163,7 @@ else
     private BankrollSnapshotDto? bankroll;
     private List<SlipDto>? slips;
     private bool isRunning;
+    private bool isTogglingAutomation;
     private string? lastRunMessage;
     private bool otpRequired;
     private string? otpCode;
@@ -199,8 +204,45 @@ else
         }
     }
 
-    private async Task StartAutomation()  { config = await Api.ToggleAutomationAsync(true);  StateHasChanged(); }
-    private async Task StopAutomation()   { config = await Api.ToggleAutomationAsync(false); StateHasChanged(); }
+    private async Task StartAutomation()
+    {
+        isTogglingAutomation = true;
+        lastRunMessage = null;
+        try
+        {
+            config = await Api.ToggleAutomationAsync(true);
+            lastRunMessage = "Automation is ON. Scheduled runs will run at 08:00 and 16:00 (Africa/Lagos).";
+            await Reload();
+        }
+        catch (Exception ex)
+        {
+            lastRunMessage = $"Could not start automation: {ex.Message}";
+        }
+        finally
+        {
+            isTogglingAutomation = false;
+        }
+    }
+
+    private async Task StopAutomation()
+    {
+        isTogglingAutomation = true;
+        lastRunMessage = null;
+        try
+        {
+            config = await Api.ToggleAutomationAsync(false);
+            lastRunMessage = "Automation is OFF. Use Generate Now for manual runs, or start automation again for scheduled runs.";
+            await Reload();
+        }
+        catch (Exception ex)
+        {
+            lastRunMessage = $"Could not stop automation: {ex.Message}";
+        }
+        finally
+        {
+            isTogglingAutomation = false;
+        }
+    }
 
     private async Task Place(Guid slipId)
     {

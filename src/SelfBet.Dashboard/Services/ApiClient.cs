@@ -10,29 +10,64 @@ public sealed class ApiClient(HttpClient httpClient)
         PropertyNameCaseInsensitive = true
     };
 
-    public Task<StrategyConfigDto?> GetStrategyConfigAsync(CancellationToken ct = default) =>
-        httpClient.GetFromJsonAsync<StrategyConfigDto>("/api/strategy-config/", JsonOptions, ct);
+    public async Task<StrategyConfigDto?> GetStrategyConfigAsync(CancellationToken ct = default)
+    {
+        var dto = await httpClient.GetFromJsonAsync<StrategyConfigDto>("/api/strategy-config/", JsonOptions, ct);
+        NormalizeStrategyConfig(dto);
+        return dto;
+    }
 
     public async Task<StrategyConfigDto?> SaveStrategyConfigAsync(StrategyConfigDto config, CancellationToken ct = default)
     {
         var response = await httpClient.PutAsJsonAsync("/api/strategy-config/", config, JsonOptions, ct);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<StrategyConfigDto>(JsonOptions, ct);
+        await EnsureSuccessOrThrowAsync(response, ct);
+        var dto = await response.Content.ReadFromJsonAsync<StrategyConfigDto>(JsonOptions, ct);
+        NormalizeStrategyConfig(dto);
+        return dto;
     }
 
     public async Task<StrategyConfigDto?> ToggleAutomationAsync(bool enable, CancellationToken ct = default)
     {
         var url = enable ? "/api/automation/start" : "/api/automation/stop";
         var response = await httpClient.PostAsync(url, null, ct);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<StrategyConfigDto>(JsonOptions, ct);
+        await EnsureSuccessOrThrowAsync(response, ct);
+        var dto = await response.Content.ReadFromJsonAsync<StrategyConfigDto>(JsonOptions, ct);
+        NormalizeStrategyConfig(dto);
+        return dto;
     }
 
     public async Task<RunOutcomeDto?> ExecuteRunAsync(CancellationToken ct = default)
     {
         var response = await httpClient.PostAsync("/api/runs/execute-now", null, ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrThrowAsync(response, ct);
         return await response.Content.ReadFromJsonAsync<RunOutcomeDto>(JsonOptions, ct);
+    }
+
+    private static void NormalizeStrategyConfig(StrategyConfigDto? c)
+    {
+        if (c is null) return;
+        if (c.EnabledLeagues is { Count: 0 } && !string.IsNullOrWhiteSpace(c.EnabledLeaguesCsv))
+        {
+            c.EnabledLeagues = c.EnabledLeaguesCsv
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+        }
+        if (c.AllowedMarkets is { Count: 0 } && !string.IsNullOrWhiteSpace(c.AllowedMarketsCsv))
+        {
+            c.AllowedMarkets = c.AllowedMarketsCsv
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .ToList();
+        }
+    }
+
+    private static async Task EnsureSuccessOrThrowAsync(HttpResponseMessage response, CancellationToken ct)
+    {
+        if (response.IsSuccessStatusCode) return;
+        var body = await response.Content.ReadAsStringAsync(ct);
+        throw new HttpRequestException(
+            string.IsNullOrWhiteSpace(body)
+                ? $"API error {(int)response.StatusCode} {response.ReasonPhrase}"
+                : $"API {(int)response.StatusCode}: {body}");
     }
 
     public Task<List<SlipDto>?> GetTodaySlipsAsync(CancellationToken ct = default) =>

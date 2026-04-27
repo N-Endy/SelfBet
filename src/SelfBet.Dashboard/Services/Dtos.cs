@@ -17,6 +17,12 @@ public sealed class StrategyConfigDto
     public List<string> EnabledLeagues { get; set; } = [];
     public List<string> AllowedMarkets { get; set; } = [];
     public DateTimeOffset UpdatedAtUtc { get; set; }
+
+    /// <summary>EF/API wire format — <see cref="EnabledLeagues"/> is derived when lists are empty.</summary>
+    public string? EnabledLeaguesCsv { get; set; }
+
+    /// <summary>EF/API wire format — <see cref="AllowedMarkets"/> is derived when lists are empty.</summary>
+    public string? AllowedMarketsCsv { get; set; }
 }
 
 public sealed class OddsRangeDto
