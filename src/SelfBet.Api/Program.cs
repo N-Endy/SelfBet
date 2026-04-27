@@ -23,6 +23,7 @@ builder.Services.AddSelfBetApplication();
 builder.Services.AddSelfBetInfrastructure(builder.Configuration);
 builder.Services.AddSelfBetAutomation(builder.Configuration);
 builder.Services.AddHostedService<TwiceDailyRunWorker>();
+builder.Services.AddHostedService<TeamStrengthRefreshWorker>();
 
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
@@ -49,5 +50,6 @@ app.MapStrategyConfigEndpoints();
 app.MapBankrollEndpoints();
 app.MapPerformanceEndpoints();
 app.MapAuditEndpoints();
+app.MapPredictionEndpoints();
 
 app.Run();

@@ -50,6 +50,20 @@ public static class DependencyInjection
                 sp.GetRequiredService<IMemoryCache>(),
                 sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<SportyBetMarketDataProvider>>()));
 
+        // ── API-Football historical-match provider ───────────────────────────
+        services.Configure<ApiFootballOptions>(configuration.GetSection("ApiFootball"));
+        services.AddHttpClient<IHistoricalMatchProvider, ApiFootballHistoricalMatchProvider>((sp, client) =>
+        {
+            var opts = sp.GetRequiredService<IOptions<ApiFootballOptions>>().Value;
+            client.BaseAddress = new Uri(opts.BaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+
+        // ── Team strength model (Dixon-Coles fitted from historical data) ───
+        services.AddScoped<IHistoricalMatchRepository, EfHistoricalMatchRepository>();
+        services.AddScoped<ITeamStrengthRepository, EfTeamStrengthRepository>();
+        services.AddScoped<ITeamStrengthService, TeamStrengthService>();
+
         // ── SMTP Email ────────────────────────────────────────────────────────
         services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.Section));
         services.AddScoped<IEmailNotifier, SmtpEmailNotifier>();

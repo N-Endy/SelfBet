@@ -38,7 +38,10 @@ public sealed class FeatureBuilder : IFeatureBuilder
                         FormDelta = Math.Round(formDelta, 3),
                         RestDaysDelta = restDelta,
                         InjuriesPenalty = injuryPenalty,
-                        MarketDispersion = dispersion
+                        MarketDispersion = dispersion,
+                        League = fixture.League,
+                        HomeTeam = fixture.HomeTeam,
+                        AwayTeam = fixture.AwayTeam
                     });
                 }
             }

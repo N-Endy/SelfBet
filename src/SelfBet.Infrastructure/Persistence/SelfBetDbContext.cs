@@ -14,6 +14,9 @@ public sealed class SelfBetDbContext(DbContextOptions<SelfBetDbContext> options)
     public DbSet<StrategyConfig> StrategyConfigs => Set<StrategyConfig>();
     public DbSet<ForecastObservation> ForecastObservations => Set<ForecastObservation>();
     public DbSet<CalibrationProfile> CalibrationProfiles => Set<CalibrationProfile>();
+    public DbSet<HistoricalMatch> HistoricalMatches => Set<HistoricalMatch>();
+    public DbSet<TeamStrength> TeamStrengths => Set<TeamStrength>();
+    public DbSet<LeagueStrengthProfile> LeagueStrengthProfiles => Set<LeagueStrengthProfile>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -103,6 +106,36 @@ public sealed class SelfBetDbContext(DbContextOptions<SelfBetDbContext> options)
             e.HasKey(x => x.Id);
             e.Property(x => x.Market).HasMaxLength(64);
             e.HasIndex(x => x.Market).IsUnique();
+        });
+
+        // ── HistoricalMatch (for team-strength fitting) ──────────────────────
+        mb.Entity<HistoricalMatch>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.ProviderFixtureId).HasMaxLength(64);
+            e.Property(x => x.League).HasMaxLength(128);
+            e.Property(x => x.Season).HasMaxLength(16);
+            e.Property(x => x.HomeTeam).HasMaxLength(128);
+            e.Property(x => x.AwayTeam).HasMaxLength(128);
+            e.HasIndex(x => x.ProviderFixtureId).IsUnique();
+            e.HasIndex(x => new { x.League, x.KickoffUtc });
+        });
+
+        // ── TeamStrength ──────────────────────────────────────────────────────
+        mb.Entity<TeamStrength>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.League).HasMaxLength(128);
+            e.Property(x => x.Team).HasMaxLength(128);
+            e.HasIndex(x => new { x.League, x.Team }).IsUnique();
+        });
+
+        // ── LeagueStrengthProfile ────────────────────────────────────────────
+        mb.Entity<LeagueStrengthProfile>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.League).HasMaxLength(128);
+            e.HasIndex(x => x.League).IsUnique();
         });
     }
 }

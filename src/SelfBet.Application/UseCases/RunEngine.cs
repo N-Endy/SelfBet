@@ -20,6 +20,7 @@ public sealed class RunEngine(
     ISafetyGate safetyGate,
     IAuditService auditService,
     IEmailNotifier emailNotifier,
+    ITeamStrengthService teamStrengthService,
     ILogger<RunEngine> logger)
 {
     public async Task<RunOutcome> ExecuteAsync(string trigger, CancellationToken cancellationToken)
@@ -69,7 +70,8 @@ public sealed class RunEngine(
                 .ToList();
 
             var features = featureBuilder.Build(trimmedFixtures);
-            var candidates = BuildCandidates(trimmedFixtures, features);
+            var enriched = await EnrichWithTeamStrengthsAsync(trimmedFixtures, features, cancellationToken);
+            var candidates = BuildCandidates(trimmedFixtures, enriched);
             run.CandidatesGenerated = candidates.Count;
 
             logger.LogInformation("RunEngine: {F} fixtures with markets, {C} candidates.",
@@ -129,6 +131,65 @@ public sealed class RunEngine(
             await auditService.LogAsync("run.failed", ex.Message, new { run.Id }, cancellationToken);
             return new RunOutcome { Run = run, Slips = [] };
         }
+    }
+
+    private async Task<IReadOnlyList<FeatureVector>> EnrichWithTeamStrengthsAsync(
+        IReadOnlyList<FixtureOddsDto> fixtures,
+        IReadOnlyList<FeatureVector> features,
+        CancellationToken ct)
+    {
+        var fixtureLookup = fixtures.ToDictionary(f => f.FixtureId, f => f);
+        var expectationCache = new Dictionary<string, FixtureExpectation?>();
+        var enriched = new List<FeatureVector>(features.Count);
+
+        foreach (var f in features)
+        {
+            FixtureExpectation? expectation = null;
+            if (fixtureLookup.TryGetValue(f.FixtureId, out var fx))
+            {
+                if (!expectationCache.TryGetValue(fx.FixtureId, out expectation))
+                {
+                    try
+                    {
+                        expectation = await teamStrengthService.GetFixtureExpectationAsync(
+                            fx.League, fx.HomeTeam, fx.AwayTeam, ct);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogDebug(ex, "Team strength lookup failed for {Fixture}", fx.FixtureId);
+                        expectation = null;
+                    }
+                    expectationCache[fx.FixtureId] = expectation;
+                }
+            }
+
+            enriched.Add(new FeatureVector
+            {
+                FixtureId = f.FixtureId,
+                Market = f.Market,
+                Outcome = f.Outcome,
+                MarketImpliedProbability = f.MarketImpliedProbability,
+                AttackStrengthDelta = f.AttackStrengthDelta,
+                FormDelta = f.FormDelta,
+                RestDaysDelta = f.RestDaysDelta,
+                InjuriesPenalty = f.InjuriesPenalty,
+                MarketDispersion = f.MarketDispersion,
+                League = f.League,
+                HomeTeam = f.HomeTeam,
+                AwayTeam = f.AwayTeam,
+                FixtureExpectation = expectation
+            });
+        }
+
+        var totalFixtures = fixtureLookup.Count;
+        var fittedFixtures = expectationCache.Values.Count(e => e is not null);
+        logger.LogInformation(
+            "RunEngine: Dixon-Coles fits available for {Fitted}/{Total} fixtures ({Pct:P0}). " +
+            "Remaining fixtures will use bookmaker-derived fallback.",
+            fittedFixtures, totalFixtures,
+            totalFixtures == 0 ? 0 : (double)fittedFixtures / totalFixtures);
+
+        return enriched;
     }
 
     private List<CandidateBet> BuildCandidates(

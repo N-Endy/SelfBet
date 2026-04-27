@@ -409,6 +409,132 @@ namespace SelfBet.Infrastructure.Migrations
                     b.ToTable("StrategyConfigs");
                 });
 
+            modelBuilder.Entity("SelfBet.Domain.Entities.HistoricalMatch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("AwayGoals")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("AwayTeam")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTimeOffset>("CapturedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("HomeGoals")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("HomeTeam")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTimeOffset>("KickoffUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("League")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("ProviderFixtureId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Season")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProviderFixtureId")
+                        .IsUnique();
+
+                    b.HasIndex("League", "KickoffUtc");
+
+                    b.ToTable("HistoricalMatches");
+                });
+
+            modelBuilder.Entity("SelfBet.Domain.Entities.TeamStrength", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<double>("Attack")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("Defence")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTimeOffset>("FittedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("League")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<int>("SampleSize")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Team")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("League", "Team")
+                        .IsUnique();
+
+                    b.ToTable("TeamStrengths");
+                });
+
+            modelBuilder.Entity("SelfBet.Domain.Entities.LeagueStrengthProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<double>("AvgAwayGoals")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("AvgHomeGoals")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("DixonColesRho")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTimeOffset>("FittedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double>("HomeAdvantage")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("League")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<int>("SampleSize")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("League")
+                        .IsUnique();
+
+                    b.ToTable("LeagueStrengthProfiles");
+                });
+
             modelBuilder.Entity("SelfBet.Domain.Entities.SlipLeg", b =>
                 {
                     b.HasOne("SelfBet.Domain.Entities.Slip", null)

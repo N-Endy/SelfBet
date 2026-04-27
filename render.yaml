@@ -37,6 +37,8 @@ services:
         value: "true"
       - key: Scheduler__TimeZone
         value: Africa/Lagos
+      - key: APIFOOTBALL__APIKEY
+        sync: false          # set in Render dashboard → Environment to enable Dixon-Coles
     healthCheckPath: /health/ready
 
   # ── Dashboard service ──────────────────────────────────────────────────
