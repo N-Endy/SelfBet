@@ -71,15 +71,6 @@ This deploys both services to Render's free tier with Neon Postgres.
 
 4. **Set secret environment variables** in the Render dashboard for `selfbet-api`:
    
-   | Variable | Value |
-   |---|---|
-   | `CONNECTIONSTRINGS__DEFAULTCONNECTION` | `Host=ep-square-pine-an66r1jw-pooler.c-6.us-east-1.aws.neon.tech;Port=5432;Database=neondb;Username=neondb_owner;Password=npg_keY73AXZScsT;SSL Mode=Require;Trust Server Certificate=true` |
-   | `SPORTYBET__PHONE` | `8161240358` |
-   | `SPORTYBET__PASSWORD` | `Hotnelson9@` |
-   | `SMTP__USERNAME` | `okafornel@gmail.com` |
-   | `SMTP__PASSWORD` | `idea idgs cepr nsvt` |
-   | `SMTP__TO` | `okafornel@gmail.com` |
-   | `SMTP__DASHBOARDURL` | `https://selfbet-dashboard.onrender.com` |
 
 5. **Deploy** → Render builds both Docker images, API migrates the DB on startup.
 
