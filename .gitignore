@@ -12,3 +12,4 @@ artifacts/
 appsettings.*.local.json
 .env
 .scratch/
+.yml
