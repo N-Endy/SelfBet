@@ -1,0 +1,238 @@
+@page "/"
+@inject ApiClient Api
+@inject IJSRuntime JS
+
+<PageTitle>Today | SelfBet</PageTitle>
+
+<div class="page-header">
+    <h1>Today's Slips</h1>
+    <div class="actions">
+        <button class="btn btn-primary" @onclick="ExecuteRun" disabled="@isRunning">
+            @(isRunning ? "⏳ Running..." : "▶ Generate Now")
+        </button>
+        @if (config is not null)
+        {
+            @if (config.AutomationEnabled)
+            {
+                <button class="btn btn-warning" @onclick="StopAutomation">⏹ Stop Automation</button>
+            }
+            else
+            {
+                <button class="btn btn-success" @onclick="StartAutomation">▷ Start Automation</button>
+            }
+        }
+    </div>
+</div>
+
+<div class="cards">
+    <div class="card">
+        <div class="card-label">Balance (SportyBet)</div>
+        <div class="card-value">₦@FormatMoney(bankroll?.Balance) <span class="unit">NGN</span></div>
+        <div class="card-sub">Stake/slip: ₦@FormatMoney(bankroll?.StakePerSlip)</div>
+    </div>
+    <div class="card">
+        <div class="card-label">Today's Slips</div>
+        <div class="card-value">@(slips?.Count ?? 0)</div>
+        <div class="card-sub">Target odds: @config?.OddsRangeMin–@config?.OddsRangeMax</div>
+    </div>
+    <div class="card">
+        <div class="card-label">Automation</div>
+        <div class="card-value @(config?.AutomationEnabled == true ? "text-green" : "text-muted")">
+            @(config?.AutomationEnabled == true ? "ON" : "OFF")
+        </div>
+        <div class="card-sub">@(config?.AutomationEnabled == true ? "Scheduled 08:00 + 16:00" : "Manual only")</div>
+    </div>
+</div>
+
+@if (lastRunMessage is not null)
+{
+    <div class="banner @(lastRunMessage.StartsWith("Error") || lastRunMessage.StartsWith("Run failed") ? "banner-error" : "")">
+        @lastRunMessage
+    </div>
+}
+
+@if (otpRequired)
+{
+    <div class="modal-overlay">
+        <div class="modal-box">
+            <h3>SportyBet OTP Required</h3>
+            <p>An SMS has been sent to your SportyBet phone number. Enter the code below to complete login.</p>
+            <input @bind="otpCode" placeholder="6-digit OTP" class="otp-input" maxlength="6" />
+            <div class="modal-actions">
+                <button class="btn btn-primary" @onclick="SubmitOtp" disabled="@string.IsNullOrWhiteSpace(otpCode)">Verify</button>
+                <button class="btn btn-ghost" @onclick="DismissOtp">Cancel</button>
+            </div>
+        </div>
+    </div>
+}
+
+<h2>Today's Slips</h2>
+@if (slips is null)
+{
+    <p class="loading">Loading...</p>
+}
+else if (slips.Count == 0)
+{
+    <p class="muted">No slips yet. Click "Generate Now" or wait for the scheduled 08:00 / 16:00 run.</p>
+}
+else
+{
+    @foreach (var slip in slips)
+    {
+        <div class="slip @StatusClass(slip.Status)">
+            <div class="slip-header">
+                <span class="slip-title">Slip @slip.Sequence</span>
+                <span class="badge badge-@slip.Status.ToLower().Replace("awaitingconfirmation","pending")">@slip.Status</span>
+                <span class="slip-odds">@slip.TotalOdds×</span>
+            </div>
+
+            <div class="slip-meta">
+                <span>Stake <strong>₦@FormatMoney(slip.Stake)</strong></span>
+                <span>→</span>
+                <span>Win <strong>₦@FormatMoney(slip.PotentialReturn)</strong></span>
+            </div>
+
+            @if (!string.IsNullOrEmpty(slip.BookingCode))
+            {
+                <div class="booking-code-box">
+                    <div class="booking-code-label">SportyBet Booking Code</div>
+                    <div class="booking-code-row">
+                        <span class="booking-code">@slip.BookingCode</span>
+                        <button class="btn btn-sm btn-ghost" @onclick="() => CopyToClipboard(slip.BookingCode!)">📋 Copy</button>
+                        @if (!string.IsNullOrEmpty(slip.BookingUrl))
+                        {
+                            <a class="btn btn-sm btn-primary" href="@slip.BookingUrl" target="_blank">📱 Open in App</a>
+                        }
+                    </div>
+                    <div class="booking-hint">Enter this code on SportyBet to load the slip, then tap Place Bet.</div>
+                </div>
+            }
+
+            <table class="legs">
+                <thead>
+                    <tr>
+                        <th>Match</th>
+                        <th>League</th>
+                        <th>Market / Pick</th>
+                        <th>Odds</th>
+                        <th>Model</th>
+                        <th>Kickoff</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var leg in slip.Legs)
+                {
+                    <tr>
+                        <td>@leg.MatchTitle</td>
+                        <td class="league-col">@leg.League</td>
+                        <td><span class="market-badge">@leg.Market</span> @leg.Outcome</td>
+                        <td class="odds-col"><strong>@leg.Odds.ToString("F2")</strong></td>
+                        <td>@leg.ModelProbability.ToString("P0")</td>
+                        <td>@leg.KickoffUtc.LocalDateTime.ToString("HH:mm")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+
+            <div class="slip-actions">
+                @if (slip.Status is "Ready" or "AwaitingConfirmation")
+                {
+                    <button class="btn btn-sm btn-primary" @onclick="() => Place(slip.Id)">Place Slip</button>
+                    <button class="btn btn-sm btn-ghost" @onclick="() => Cancel(slip.Id)">Cancel</button>
+                }
+                @if (!string.IsNullOrEmpty(slip.FailureReason))
+                {
+                    <span class="failure">⚠ @slip.FailureReason</span>
+                }
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private StrategyConfigDto? config;
+    private BankrollSnapshotDto? bankroll;
+    private List<SlipDto>? slips;
+    private bool isRunning;
+    private string? lastRunMessage;
+    private bool otpRequired;
+    private string? otpCode;
+
+    protected override async Task OnInitializedAsync() => await Reload();
+
+    private async Task Reload()
+    {
+        try
+        {
+            config = await Api.GetStrategyConfigAsync();
+            bankroll = await Api.GetBankrollAsync();
+            slips = await Api.GetTodaySlipsAsync() ?? [];
+        }
+        catch (Exception ex)
+        {
+            lastRunMessage = $"Error loading dashboard: {ex.Message}";
+        }
+    }
+
+    private async Task ExecuteRun()
+    {
+        isRunning = true;
+        lastRunMessage = null;
+        try
+        {
+            var outcome = await Api.ExecuteRunAsync();
+            lastRunMessage = outcome?.Run.Message ?? "Run completed.";
+            await Reload();
+        }
+        catch (Exception ex)
+        {
+            lastRunMessage = $"Run failed: {ex.Message}";
+        }
+        finally
+        {
+            isRunning = false;
+        }
+    }
+
+    private async Task StartAutomation()  { config = await Api.ToggleAutomationAsync(true);  StateHasChanged(); }
+    private async Task StopAutomation()   { config = await Api.ToggleAutomationAsync(false); StateHasChanged(); }
+
+    private async Task Place(Guid slipId)
+    {
+        await Api.PlaceSlipAsync(slipId);
+        await Reload();
+    }
+
+    private async Task Cancel(Guid slipId)
+    {
+        await Api.CancelSlipAsync(slipId);
+        await Reload();
+    }
+
+    private async Task CopyToClipboard(string text)
+    {
+        try { await JS.InvokeVoidAsync("navigator.clipboard.writeText", text); }
+        catch { /* clipboard unavailable in some contexts */ }
+    }
+
+    private async Task SubmitOtp()
+    {
+        if (string.IsNullOrWhiteSpace(otpCode)) return;
+        await Api.SubmitOtpAsync(otpCode);
+        otpRequired = false;
+        otpCode = null;
+        await Reload();
+    }
+
+    private void DismissOtp() { otpRequired = false; otpCode = null; }
+
+    private static string FormatMoney(decimal? v) => v is null ? "—" : v.Value.ToString("N0");
+
+    private static string StatusClass(string status) => status switch
+    {
+        "Ready" or "AwaitingConfirmation" => "slip-ready",
+        "Placed" => "slip-placed",
+        "Failed" => "slip-failed",
+        _ => ""
+    };
+}

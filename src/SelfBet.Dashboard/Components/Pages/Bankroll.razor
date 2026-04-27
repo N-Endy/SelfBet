@@ -1,0 +1,56 @@
+@page "/bankroll"
+@inject ApiClient Api
+
+<PageTitle>Bankroll | SelfBet</PageTitle>
+
+<h1>Bankroll</h1>
+
+@if (snapshot is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="cards">
+        <div class="card"><div class="card-label">Balance</div><div class="card-value">@snapshot.Balance.ToString("N0") <span class="unit">@snapshot.Currency</span></div></div>
+        <div class="card"><div class="card-label">Stake / slip (2%)</div><div class="card-value">@snapshot.StakePerSlip.ToString("N0")</div></div>
+        <div class="card"><div class="card-label">Captured</div><div class="card-value">@snapshot.CapturedAtUtc.LocalDateTime.ToString("yyyy-MM-dd HH:mm")</div></div>
+    </div>
+}
+
+<h2>Capture new snapshot</h2>
+<EditForm Model="this" OnValidSubmit="HandleSubmit" FormName="capture">
+    <div class="form-row">
+        <label>Balance (NGN)</label>
+        <InputNumber @bind-Value="balance" />
+    </div>
+    <div class="form-row">
+        <label>Note</label>
+        <InputText @bind-Value="note" />
+    </div>
+    <button type="submit" class="btn btn-primary">Capture</button>
+</EditForm>
+
+@if (message is not null)
+{
+    <p class="banner">@message</p>
+}
+
+@code {
+    private BankrollSnapshotDto? snapshot;
+    private decimal balance;
+    private string? note;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        snapshot = await Api.GetBankrollAsync();
+        balance = snapshot?.Balance ?? 0m;
+    }
+
+    private async Task HandleSubmit()
+    {
+        snapshot = await Api.CaptureBankrollAsync(balance, note);
+        message = $"Captured snapshot at {snapshot?.CapturedAtUtc.LocalDateTime:HH:mm}";
+    }
+}

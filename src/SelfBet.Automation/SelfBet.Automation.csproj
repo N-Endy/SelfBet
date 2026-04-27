@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="..\SelfBet.Domain\SelfBet.Domain.csproj" />
+    <ProjectReference Include="..\SelfBet.Application\SelfBet.Application.csproj" />
+  </ItemGroup>
+</Project>

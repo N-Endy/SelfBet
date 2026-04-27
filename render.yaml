@@ -1,0 +1,58 @@
+services:
+  # ── API service ────────────────────────────────────────────────────────
+  - type: web
+    name: selfbet-api
+    runtime: docker
+    dockerfilePath: src/SelfBet.Api/Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://+:8080
+      - key: CONNECTIONSTRINGS__DEFAULTCONNECTION
+        sync: false          # set in Render dashboard → Environment
+      - key: SPORTYBET__PHONE
+        sync: false
+      - key: SPORTYBET__PASSWORD
+        sync: false
+      - key: SPORTYBET__PLACEMENTMODE
+        value: booking_code
+      - key: SMTP__ENABLED
+        value: "true"
+      - key: SMTP__HOST
+        value: smtp.gmail.com
+      - key: SMTP__PORT
+        value: "587"
+      - key: SMTP__USERNAME
+        sync: false
+      - key: SMTP__PASSWORD
+        sync: false
+      - key: SMTP__TO
+        sync: false
+      - key: SMTP__DASHBOARDURL
+        sync: false          # set to https://selfbet-dashboard.onrender.com once deployed
+      - key: Scheduler__Enabled
+        value: "true"
+      - key: Scheduler__TimeZone
+        value: Africa/Lagos
+    healthCheckPath: /health/ready
+
+  # ── Dashboard service ──────────────────────────────────────────────────
+  - type: web
+    name: selfbet-dashboard
+    runtime: docker
+    dockerfilePath: src/SelfBet.Dashboard/Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://+:8090
+      - key: Api__BaseUrl
+        fromService:
+          type: web
+          name: selfbet-api
+          property: hostport

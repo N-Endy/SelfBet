@@ -1,0 +1,65 @@
+@page "/performance"
+@inject ApiClient Api
+
+<PageTitle>Performance | SelfBet</PageTitle>
+
+<h1>Performance</h1>
+
+<div class="cards">
+    <div class="card"><div class="card-label">Total slips</div><div class="card-value">@summary?.TotalSlips</div></div>
+    <div class="card"><div class="card-label">Hit rate</div><div class="card-value">@(summary?.HitRate.ToString("P0") ?? "-")</div></div>
+    <div class="card"><div class="card-label">Net profit</div><div class="card-value">@FormatMoney(summary?.NetProfit)</div></div>
+    <div class="card"><div class="card-label">ROI</div><div class="card-value">@(summary?.Roi.ToString("P1") ?? "-")</div></div>
+</div>
+
+<h2>Recent slips</h2>
+@if (history is null)
+{
+    <p>Loading...</p>
+}
+else if (history.Count == 0)
+{
+    <p class="muted">No slip history yet.</p>
+}
+else
+{
+    <table class="data">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Sequence</th>
+                <th>Stake</th>
+                <th>Odds</th>
+                <th>Status</th>
+                <th>Payout</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var s in history)
+        {
+            <tr>
+                <td>@s.RunDate</td>
+                <td>#@s.Sequence</td>
+                <td>@FormatMoney(s.Stake)</td>
+                <td>@s.TotalOdds</td>
+                <td><span class="status status-@s.Status.ToLower()">@s.Status</span></td>
+                <td>@FormatMoney(s.Payout)</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    private PerformanceSummaryDto? summary;
+    private List<SlipDto>? history;
+
+    protected override async Task OnInitializedAsync()
+    {
+        summary = await Api.GetPerformanceSummaryAsync(30);
+        history = await Api.GetPerformanceHistoryAsync(50) ?? [];
+    }
+
+    private static string FormatMoney(decimal? value) =>
+        value is null ? "-" : value.Value.ToString("N0");
+}

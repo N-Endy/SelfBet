@@ -1,0 +1,14 @@
+bin/
+obj/
+out/
+publish/
+artifacts/
+*.user
+.vs/
+.vscode/
+.idea/
+.DS_Store
+*.log
+appsettings.*.local.json
+.env
+.scratch/

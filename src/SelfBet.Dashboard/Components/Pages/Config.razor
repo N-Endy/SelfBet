@@ -1,0 +1,100 @@
+@page "/config"
+@inject ApiClient Api
+
+<PageTitle>Strategy | SelfBet</PageTitle>
+
+<h1>Strategy Configuration</h1>
+
+@if (config is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <EditForm Model="config" OnValidSubmit="Save" FormName="config">
+        <div class="form-grid">
+            <label>Min total odds</label>
+            <InputNumber @bind-Value="config.OddsRangeMin" />
+
+            <label>Max total odds</label>
+            <InputNumber @bind-Value="config.OddsRangeMax" />
+
+            <label>Stake % per slip</label>
+            <InputNumber @bind-Value="config.StakePercentagePerSlip" />
+
+            <label>Slips per day</label>
+            <InputNumber @bind-Value="config.SlipsPerDay" />
+
+            <label>Min legs / slip</label>
+            <InputNumber @bind-Value="config.MinLegsPerSlip" />
+
+            <label>Max legs / slip</label>
+            <InputNumber @bind-Value="config.MaxLegsPerSlip" />
+
+            <label>Min edge threshold</label>
+            <InputNumber @bind-Value="config.MinEdgeThreshold" />
+
+            <label>Min leg odds</label>
+            <InputNumber @bind-Value="config.MinLegOdds" />
+
+            <label>Max leg odds</label>
+            <InputNumber @bind-Value="config.MaxLegOdds" />
+
+            <label>Stake increment</label>
+            <InputNumber @bind-Value="config.StakeIncrement" />
+
+            <label>Automation enabled</label>
+            <InputCheckbox @bind-Value="config.AutomationEnabled" />
+
+            <label>Require confirmation on risk</label>
+            <InputCheckbox @bind-Value="config.RequireConfirmationOnRisk" />
+
+            <label>Enabled leagues (comma)</label>
+            <InputText @bind-Value="enabledLeaguesText" />
+
+            <label>Allowed markets (comma)</label>
+            <InputText @bind-Value="allowedMarketsText" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save</button>
+    </EditForm>
+}
+
+@if (message is not null)
+{
+    <p class="banner">@message</p>
+}
+
+@code {
+    private StrategyConfigDto? config;
+    private string enabledLeaguesText = string.Empty;
+    private string allowedMarketsText = string.Empty;
+    private string? message;
+
+    protected override async Task OnInitializedAsync()
+    {
+        config = await Api.GetStrategyConfigAsync();
+        if (config is not null)
+        {
+            enabledLeaguesText = string.Join(", ", config.EnabledLeagues);
+            allowedMarketsText = string.Join(", ", config.AllowedMarkets);
+        }
+    }
+
+    private async Task Save()
+    {
+        if (config is null)
+        {
+            return;
+        }
+
+        config.EnabledLeagues = enabledLeaguesText
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToList();
+        config.AllowedMarkets = allowedMarketsText
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToList();
+        config = await Api.SaveStrategyConfigAsync(config);
+        message = "Strategy saved.";
+    }
+}

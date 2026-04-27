@@ -1,0 +1,48 @@
+@page "/audit"
+@inject ApiClient Api
+
+<PageTitle>Audit | SelfBet</PageTitle>
+
+<h1>Audit Trail</h1>
+
+@if (events is null)
+{
+    <p>Loading...</p>
+}
+else if (events.Count == 0)
+{
+    <p class="muted">No audit events yet.</p>
+}
+else
+{
+    <table class="data">
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Message</th>
+                <th>Metadata</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var e in events)
+        {
+            <tr>
+                <td>@e.OccurredAtUtc.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                <td>@e.EventType</td>
+                <td>@e.Message</td>
+                <td><code>@e.MetadataJson</code></td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<AuditEventDto>? events;
+
+    protected override async Task OnInitializedAsync()
+    {
+        events = await Api.GetAuditEventsAsync(200) ?? [];
+    }
+}

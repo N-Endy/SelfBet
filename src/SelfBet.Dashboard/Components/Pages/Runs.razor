@@ -1,0 +1,54 @@
+@page "/runs"
+@inject ApiClient Api
+
+<PageTitle>Runs | SelfBet</PageTitle>
+
+<h1>Runs</h1>
+
+@if (runs is null)
+{
+    <p>Loading...</p>
+}
+else if (runs.Count == 0)
+{
+    <p class="muted">No runs recorded yet.</p>
+}
+else
+{
+    <table class="data">
+        <thead>
+            <tr>
+                <th>Started</th>
+                <th>Trigger</th>
+                <th>Status</th>
+                <th>Fixtures</th>
+                <th>Candidates</th>
+                <th>Slips</th>
+                <th>Message</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var r in runs)
+        {
+            <tr>
+                <td>@r.StartedAtUtc.LocalDateTime.ToString("yyyy-MM-dd HH:mm")</td>
+                <td>@r.Trigger</td>
+                <td><span class="status status-@r.Status.ToLower()">@r.Status</span></td>
+                <td>@r.FixturesEvaluated</td>
+                <td>@r.CandidatesGenerated</td>
+                <td>@r.SlipsBuilt</td>
+                <td>@r.Message</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<RunDto>? runs;
+
+    protected override async Task OnInitializedAsync()
+    {
+        runs = await Api.GetRunsAsync(50) ?? [];
+    }
+}
