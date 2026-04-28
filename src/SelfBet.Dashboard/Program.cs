@@ -9,6 +9,7 @@ var apiBaseUrl = builder.Configuration["Api:BaseUrl"] ?? "http://localhost:5080"
 builder.Services.AddHttpClient<ApiClient>(client =>
 {
     client.BaseAddress = new Uri(apiBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(120);
 });
 
 var app = builder.Build();

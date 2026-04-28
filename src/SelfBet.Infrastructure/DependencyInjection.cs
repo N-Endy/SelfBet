@@ -17,14 +17,18 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         // ── Postgres via EF Core ──────────────────────────────────────────────
-        var connectionString = configuration.GetConnectionString("DefaultConnection")
+        var rawConnectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException(
                 "ConnectionStrings:DefaultConnection is not set. " +
                 "Set it via the CONNECTIONSTRINGS__DEFAULTCONNECTION environment variable.");
+        var connectionString = ResilientPostgresConnectionString.Build(rawConnectionString);
 
         services.AddDbContext<SelfBetDbContext>(opts =>
-            opts.UseNpgsql(connectionString,
-                npgsql => npgsql.EnableRetryOnFailure(3)));
+            opts.UseNpgsql(connectionString, npgsql =>
+                npgsql.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(30),
+                    errorCodesToAdd: null)));
 
         // ── Repositories ─────────────────────────────────────────────────────
         services.AddScoped<IStrategyConfigRepository, EfStrategyConfigRepository>();
