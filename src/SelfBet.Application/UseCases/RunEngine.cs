@@ -221,13 +221,17 @@ public sealed class RunEngine(
             if (outcome is null) continue;
 
             var probability = predictionService.Predict(feature);
+            var source = feature.FixtureExpectation is null ? "BookmakerFallback" : "DixonColes";
             candidates.Add(new CandidateBet
             {
                 Match = matchByFixture[feature.FixtureId],
                 Market = feature.Market,
                 Outcome = feature.Outcome,
                 Odds = outcome.Odds,
-                ModelProbability = probability
+                ModelProbability = probability,
+                PredictionSource = source,
+                HomeSampleSize = feature.FixtureExpectation?.HomeSampleSize,
+                AwaySampleSize = feature.FixtureExpectation?.AwaySampleSize
             });
         }
 

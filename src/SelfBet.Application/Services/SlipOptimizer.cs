@@ -113,6 +113,12 @@ public sealed class SlipOptimizer : ISlipOptimizer
                 Outcome = pick.Candidate.Outcome,
                 Odds = pick.Candidate.Odds,
                 ModelProbability = pick.Candidate.ModelProbability,
+                MarketImpliedProbability = pick.Candidate.ImpliedProbability,
+                Edge = pick.Candidate.Edge,
+                ExpectedValue = pick.Candidate.ExpectedValue,
+                PredictionSource = pick.Candidate.PredictionSource,
+                HomeSampleSize = pick.Candidate.HomeSampleSize,
+                AwaySampleSize = pick.Candidate.AwaySampleSize,
                 KickoffUtc = pick.Candidate.Match.KickoffUtc
             });
 

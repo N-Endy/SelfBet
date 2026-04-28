@@ -58,6 +58,12 @@ public sealed class SlipLegDto
     public string Outcome { get; set; } = string.Empty;
     public decimal Odds { get; set; }
     public decimal ModelProbability { get; set; }
+    public decimal MarketImpliedProbability { get; set; }
+    public decimal Edge { get; set; }
+    public decimal ExpectedValue { get; set; }
+    public string PredictionSource { get; set; } = "BookmakerFallback";
+    public int? HomeSampleSize { get; set; }
+    public int? AwaySampleSize { get; set; }
     public DateTimeOffset KickoffUtc { get; set; }
 }
 

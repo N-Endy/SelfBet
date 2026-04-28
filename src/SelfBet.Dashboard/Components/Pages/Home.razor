@@ -139,6 +139,20 @@ else
                         <td>@leg.ModelProbability.ToString("P0")</td>
                         <td>@leg.KickoffUtc.LocalDateTime.ToString("HH:mm")</td>
                     </tr>
+                    <tr>
+                        <td colspan="6" class="muted" style="font-size: 0.82rem; padding-top: 0;">
+                            Why this pick:
+                            model @leg.ModelProbability.ToString("P1")
+                            vs market @leg.MarketImpliedProbability.ToString("P1")
+                            | edge @leg.Edge.ToString("P1")
+                            | EV @leg.ExpectedValue.ToString("P2")
+                            | source @leg.PredictionSource
+                            @if (leg.HomeSampleSize is not null && leg.AwaySampleSize is not null)
+                            {
+                                <span>| samples H:@leg.HomeSampleSize A:@leg.AwaySampleSize</span>
+                            }
+                        </td>
+                    </tr>
                 }
                 </tbody>
             </table>
