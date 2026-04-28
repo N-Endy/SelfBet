@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
     <link rel="stylesheet" href="app.css" />
-    <HeadOutlet @rendermode="@(new InteractiveServerRenderMode(prerender: false))" />
+    <HeadOutlet @rendermode="InteractiveServer" />
     <title>SelfBet Dashboard</title>
 </head>
 <body>
-    <Routes @rendermode="@(new InteractiveServerRenderMode(prerender: false))" />
+    <Routes @rendermode="InteractiveServer" />
     <script src="_framework/blazor.web.js"></script>
 </body>
 </html>
