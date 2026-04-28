@@ -143,14 +143,9 @@ else
                         <td colspan="6" class="muted" style="font-size: 0.82rem; padding-top: 0;">
                             Why this pick:
                             model @leg.ModelProbability.ToString("P1")
-                            vs market @leg.MarketImpliedProbability.ToString("P1")
-                            | edge @leg.Edge.ToString("P1")
-                            | EV @leg.ExpectedValue.ToString("P2")
-                            | source @leg.PredictionSource
-                            @if (leg.HomeSampleSize is not null && leg.AwaySampleSize is not null)
-                            {
-                                <span>| samples H:@leg.HomeSampleSize A:@leg.AwaySampleSize</span>
-                            }
+                            vs market @MarketImpliedProbability(leg.Odds).ToString("P1")
+                            | edge @Edge(leg.ModelProbability, leg.Odds).ToString("P1")
+                            | EV @ExpectedValue(leg.ModelProbability, leg.Odds).ToString("P2")
                         </td>
                     </tr>
                 }
@@ -335,6 +330,15 @@ else
     private void DismissOtp() { otpRequired = false; otpCode = null; }
 
     private static string FormatMoney(decimal? v) => v is null ? "—" : v.Value.ToString("N0");
+
+    private static decimal MarketImpliedProbability(decimal odds) =>
+        odds <= 0m ? 0m : Math.Round(1m / odds, 4);
+
+    private static decimal Edge(decimal modelProbability, decimal odds) =>
+        Math.Round(modelProbability - MarketImpliedProbability(odds), 4);
+
+    private static decimal ExpectedValue(decimal modelProbability, decimal odds) =>
+        Math.Round((modelProbability * odds) - 1m, 4);
 
     private static string StatusClass(string status) => status switch
     {

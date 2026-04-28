@@ -313,25 +313,10 @@ namespace SelfBet.Infrastructure.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
 
-                    b.Property<int?>("AwaySampleSize")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal>("Edge")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("ExpectedValue")
-                        .HasColumnType("numeric");
-
-                    b.Property<int?>("HomeSampleSize")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Market")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
-
-                    b.Property<decimal>("MarketImpliedProbability")
-                        .HasColumnType("numeric");
 
                     b.Property<Guid>("MatchId")
                         .HasColumnType("uuid");
@@ -351,11 +336,6 @@ namespace SelfBet.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
-
-                    b.Property<string>("PredictionSource")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
 
                     b.Property<Guid>("SlipId")
                         .HasColumnType("uuid");
