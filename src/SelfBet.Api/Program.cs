@@ -48,6 +48,15 @@ var app = builder.Build();
             using var scope = app.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<SelfBetDbContext>();
             await db.Database.MigrateAsync();
+            await db.Database.ExecuteSqlRawAsync(
+                """
+                ALTER TABLE "SlipLegs" ADD COLUMN IF NOT EXISTS "MarketImpliedProbability" numeric NOT NULL DEFAULT 0;
+                ALTER TABLE "SlipLegs" ADD COLUMN IF NOT EXISTS "Edge" numeric NOT NULL DEFAULT 0;
+                ALTER TABLE "SlipLegs" ADD COLUMN IF NOT EXISTS "ExpectedValue" numeric NOT NULL DEFAULT 0;
+                ALTER TABLE "SlipLegs" ADD COLUMN IF NOT EXISTS "PredictionSource" character varying(32) NOT NULL DEFAULT 'BookmakerFallback';
+                ALTER TABLE "SlipLegs" ADD COLUMN IF NOT EXISTS "HomeSampleSize" integer NULL;
+                ALTER TABLE "SlipLegs" ADD COLUMN IF NOT EXISTS "AwaySampleSize" integer NULL;
+                """);
             last = null;
             break;
         }
