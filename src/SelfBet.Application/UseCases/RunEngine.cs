@@ -155,31 +155,22 @@ public sealed class RunEngine(
     {
         var fixtureLookup = fixtures.ToDictionary(f => f.FixtureId, f => f);
         var expectationCache = new Dictionary<string, FixtureExpectation?>();
-        var uniqueFixtures = fixtureLookup.Values.ToList();
-        using var enrichGate = new SemaphoreSlim(8);
 
-        await Task.WhenAll(uniqueFixtures.Select(async fx =>
+        foreach (var fx in fixtureLookup.Values)
         {
-            await enrichGate.WaitAsync(ct);
+            if (expectationCache.ContainsKey(fx.FixtureId)) continue;
+
             try
             {
-                try
-                {
-                    var expectation = await teamStrengthService.GetFixtureExpectationAsync(
-                        fx.League, fx.HomeTeam, fx.AwayTeam, ct);
-                    lock (expectationCache) { expectationCache[fx.FixtureId] = expectation; }
-                }
-                catch (Exception ex)
-                {
-                    logger.LogDebug(ex, "Team strength lookup failed for {Fixture}", fx.FixtureId);
-                    lock (expectationCache) { expectationCache[fx.FixtureId] = null; }
-                }
+                expectationCache[fx.FixtureId] = await teamStrengthService.GetFixtureExpectationAsync(
+                    fx.League, fx.HomeTeam, fx.AwayTeam, ct);
             }
-            finally
+            catch (Exception ex)
             {
-                enrichGate.Release();
+                logger.LogDebug(ex, "Team strength lookup failed for {Fixture}", fx.FixtureId);
+                expectationCache[fx.FixtureId] = null;
             }
-        }));
+        }
 
         var enriched = new List<FeatureVector>(features.Count);
 
@@ -277,7 +268,8 @@ public sealed class RunEngine(
         var ready = slips.Where(s => s.Status == SlipStatus.Ready).ToList();
         if (ready.Count == 0) return;
 
-        async Task PlaceOneAsync(Slip slip)
+        // DbContext is scoped per request — place slips sequentially to avoid concurrent use.
+        foreach (var slip in ready)
         {
             try
             {
@@ -317,14 +309,6 @@ public sealed class RunEngine(
 
             await slipRepository.UpdateAsync(slip, cancellationToken);
         }
-
-        if (ready.Count == 1)
-        {
-            await PlaceOneAsync(ready[0]);
-            return;
-        }
-
-        await Task.WhenAll(ready.Select(PlaceOneAsync));
     }
 
     private async Task SendRunEmailAsync(
