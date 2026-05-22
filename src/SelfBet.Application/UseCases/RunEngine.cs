@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using SelfBet.Application.Abstractions;
 using SelfBet.Application.Models;
+using SelfBet.Application.Services;
 using SelfBet.Domain.Entities;
 using SelfBet.Domain.Enums;
 
@@ -8,6 +9,7 @@ namespace SelfBet.Application.UseCases;
 
 public sealed class RunEngine(
     IFootballDataProvider footballDataProvider,
+    ISportyBetFixtureCache fixtureCache,
     IFeatureBuilder featureBuilder,
     IPredictionService predictionService,
     ISlipOptimizer slipOptimizer,
@@ -35,11 +37,14 @@ public sealed class RunEngine(
             var bankroll = await bankrollService.GetCurrentAsync(cancellationToken);
             var stakePerSlip = bankrollService.ComputeStakePerSlip(bankroll.Balance, config);
 
+            var lookahead = Math.Clamp(config.FixtureLookaheadHours, 12, 96);
+            var snapshot = await fixtureCache.GetSnapshotAsync(cancellationToken);
             var fixtures = await footballDataProvider.GetUpcomingFixturesAsync(
                 DateTimeOffset.UtcNow,
-                DateTimeOffset.UtcNow.AddHours(24),
+                DateTimeOffset.UtcNow.AddHours(lookahead),
                 cancellationToken);
             run.FixturesEvaluated = fixtures.Count;
+            var placementFixtures = snapshot.PlacementFixtures;
 
             var filteredFixtures = fixtures
                 .Where(f => config.EnabledLeagues.Count == 0 ||
@@ -80,6 +85,16 @@ public sealed class RunEngine(
             var build = slipOptimizer.Build(candidates, config, run.Id, stakePerSlip);
             run.SlipsBuilt = build.Slips.Count(s => s.Status == SlipStatus.Ready);
 
+            var dixonCount = candidates.Count(c => c.PredictionSource == "DixonColes");
+            var readyLegs = build.Slips.Where(s => s.Status == SlipStatus.Ready).SelectMany(s => s.Legs).ToList();
+            logger.LogInformation(
+                "RunEngine: {Ready}/{Total} slips ready. Dixon-Coles candidates {Dixon}/{Cand}. " +
+                "Ready legs: avg edge {Edge:P1}, leg counts [{Counts}].",
+                run.SlipsBuilt, build.Slips.Count,
+                dixonCount, candidates.Count,
+                readyLegs.Count == 0 ? 0 : readyLegs.Average(l => l.Edge),
+                string.Join(", ", build.Slips.Where(s => s.Status == SlipStatus.Ready).Select(s => s.Legs.Count)));
+
             await slipRepository.SaveAsync(build.Slips, cancellationToken);
 
             var outcome = new RunOutcome { Run = run, Slips = build.Slips };
@@ -104,7 +119,7 @@ public sealed class RunEngine(
 
                 case SafetyGateOutcome.Pass:
                 default:
-                    await PlaceReadySlipsAsync(build.Slips, config, cancellationToken);
+                    await PlaceReadySlipsAsync(build.Slips, config, placementFixtures, cancellationToken);
                     run.Status = build.Slips.Any(s => s.Status == SlipStatus.Failed)
                         ? RunStatus.RequiresConfirmation
                         : RunStatus.Completed;
@@ -140,28 +155,39 @@ public sealed class RunEngine(
     {
         var fixtureLookup = fixtures.ToDictionary(f => f.FixtureId, f => f);
         var expectationCache = new Dictionary<string, FixtureExpectation?>();
+        var uniqueFixtures = fixtureLookup.Values.ToList();
+        using var enrichGate = new SemaphoreSlim(8);
+
+        await Task.WhenAll(uniqueFixtures.Select(async fx =>
+        {
+            await enrichGate.WaitAsync(ct);
+            try
+            {
+                try
+                {
+                    var expectation = await teamStrengthService.GetFixtureExpectationAsync(
+                        fx.League, fx.HomeTeam, fx.AwayTeam, ct);
+                    lock (expectationCache) { expectationCache[fx.FixtureId] = expectation; }
+                }
+                catch (Exception ex)
+                {
+                    logger.LogDebug(ex, "Team strength lookup failed for {Fixture}", fx.FixtureId);
+                    lock (expectationCache) { expectationCache[fx.FixtureId] = null; }
+                }
+            }
+            finally
+            {
+                enrichGate.Release();
+            }
+        }));
+
         var enriched = new List<FeatureVector>(features.Count);
 
         foreach (var f in features)
         {
             FixtureExpectation? expectation = null;
-            if (fixtureLookup.TryGetValue(f.FixtureId, out var fx))
-            {
-                if (!expectationCache.TryGetValue(fx.FixtureId, out expectation))
-                {
-                    try
-                    {
-                        expectation = await teamStrengthService.GetFixtureExpectationAsync(
-                            fx.League, fx.HomeTeam, fx.AwayTeam, ct);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogDebug(ex, "Team strength lookup failed for {Fixture}", fx.FixtureId);
-                        expectation = null;
-                    }
-                    expectationCache[fx.FixtureId] = expectation;
-                }
-            }
+            if (fixtureLookup.TryGetValue(f.FixtureId, out _))
+                expectationCache.TryGetValue(f.FixtureId, out expectation);
 
             enriched.Add(new FeatureVector
             {
@@ -216,7 +242,11 @@ public sealed class RunEngine(
             var market = fixture.Markets.FirstOrDefault(m =>
                 string.Equals(m.Market, feature.Market, StringComparison.OrdinalIgnoreCase));
             var outcome = market?.Outcomes.FirstOrDefault(o =>
-                string.Equals(o.Outcome, feature.Outcome, StringComparison.OrdinalIgnoreCase));
+                string.Equals(o.Outcome, feature.Outcome, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(
+                    MarketOutcomeNormalizer.NormalizeOutcome(feature.Market, o.Outcome),
+                    feature.Outcome,
+                    StringComparison.OrdinalIgnoreCase));
 
             if (outcome is null) continue;
 
@@ -241,31 +271,32 @@ public sealed class RunEngine(
     private async Task PlaceReadySlipsAsync(
         IReadOnlyList<Slip> slips,
         StrategyConfig config,
+        IReadOnlyList<SportyBetPlacementFixture>? placementFixtures,
         CancellationToken cancellationToken)
     {
-        foreach (var slip in slips.Where(s => s.Status == SlipStatus.Ready))
+        var ready = slips.Where(s => s.Status == SlipStatus.Ready).ToList();
+        if (ready.Count == 0) return;
+
+        async Task PlaceOneAsync(Slip slip)
         {
             try
             {
-                var attempt = await automationGateway.PlaceSlipAsync(slip, cancellationToken);
+                var attempt = await automationGateway.PlaceSlipAsync(slip, cancellationToken, placementFixtures);
                 await placementRepository.SaveAsync(attempt, cancellationToken);
 
                 if (attempt.Success)
                 {
-                    // Write booking code / ticket back to slip
                     slip.BookingCode = attempt.BookingCode;
                     slip.BookingUrl = attempt.BookingUrl;
 
                     if (!string.IsNullOrEmpty(attempt.ExternalTicketId))
                     {
-                        // Full auth placement — bet already staked
                         slip.Status = SlipStatus.Placed;
                         slip.ExternalTicketId = attempt.ExternalTicketId;
                         slip.PlacedAtUtc = attempt.AttemptedAtUtc;
                     }
                     else
                     {
-                        // Booking code mode — awaiting user to tap in app
                         slip.Status = SlipStatus.AwaitingConfirmation;
                     }
                 }
@@ -286,6 +317,14 @@ public sealed class RunEngine(
 
             await slipRepository.UpdateAsync(slip, cancellationToken);
         }
+
+        if (ready.Count == 1)
+        {
+            await PlaceOneAsync(ready[0]);
+            return;
+        }
+
+        await Task.WhenAll(ready.Select(PlaceOneAsync));
     }
 
     private async Task SendRunEmailAsync(

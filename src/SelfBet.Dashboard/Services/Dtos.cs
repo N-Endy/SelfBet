@@ -9,8 +9,12 @@ public sealed class StrategyConfigDto
     public int MaxLegsPerSlip { get; set; }
     public int MinLegsPerSlip { get; set; }
     public decimal MinEdgeThreshold { get; set; }
+    public decimal MinModelProbability { get; set; }
     public decimal MinLegOdds { get; set; }
     public decimal MaxLegOdds { get; set; }
+    public int OptimizerBeamWidth { get; set; } = 12;
+    public bool PreferDiversification { get; set; } = true;
+    public int FixtureLookaheadHours { get; set; } = 48;
     public decimal StakeIncrement { get; set; }
     public bool AutomationEnabled { get; set; }
     public bool RequireConfirmationOnRisk { get; set; }
@@ -58,6 +62,9 @@ public sealed class SlipLegDto
     public string Outcome { get; set; } = string.Empty;
     public decimal Odds { get; set; }
     public decimal ModelProbability { get; set; }
+    public decimal Edge { get; set; }
+    public decimal ExpectedValue { get; set; }
+    public string PredictionSource { get; set; } = "BookmakerFallback";
     public DateTimeOffset KickoffUtc { get; set; }
 }
 

@@ -48,11 +48,9 @@ public static class DependencyInjection
             {
                 ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
             });
-        services.AddScoped<IFootballDataProvider, SportyBetMarketDataProvider>(sp =>
-            new SportyBetMarketDataProvider(
-                sp.GetRequiredService<IHttpClientFactory>(),
-                sp.GetRequiredService<IMemoryCache>(),
-                sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<SportyBetMarketDataProvider>>()));
+        services.AddSingleton<ISportyBetFixtureCache, SportyBetFixtureCache>();
+        services.AddScoped<IFootballDataProvider, SportyBetMarketDataProvider>();
+        services.AddSingleton<LeagueNameResolver>();
 
         // ── API-Football historical-match provider ───────────────────────────
         services.Configure<ApiFootballOptions>(configuration.GetSection("ApiFootball"));

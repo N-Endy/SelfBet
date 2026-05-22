@@ -1,5 +1,6 @@
 using SelfBet.Application.Abstractions;
 using SelfBet.Application.Models;
+using SelfBet.Application.Services;
 
 namespace SelfBet.Application.Services;
 
@@ -28,11 +29,14 @@ public sealed class FeatureBuilder : IFeatureBuilder
                         continue;
                     }
 
+                    var normalizedMarket = MarketOutcomeNormalizer.NormalizeMarket(market.Market);
+                    var normalizedOutcome = MarketOutcomeNormalizer.NormalizeOutcome(normalizedMarket, outcome.Outcome);
+
                     vectors.Add(new FeatureVector
                     {
                         FixtureId = fixture.FixtureId,
-                        Market = market.Market,
-                        Outcome = outcome.Outcome,
+                        Market = normalizedMarket,
+                        Outcome = normalizedOutcome,
                         MarketImpliedProbability = Math.Round(1m / outcome.Odds, 4),
                         AttackStrengthDelta = Math.Round(attackDelta, 3),
                         FormDelta = Math.Round(formDelta, 3),

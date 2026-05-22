@@ -22,8 +22,12 @@ public sealed class StrategyConfig
     public int MaxLegsPerSlip { get; set; } = 6;
     public int MinLegsPerSlip { get; set; } = 2;
     public decimal MinEdgeThreshold { get; set; } = 0.02m;
+    public decimal MinModelProbability { get; set; } = 0m;
     public decimal MinLegOdds { get; set; } = 1.20m;
     public decimal MaxLegOdds { get; set; } = 4.50m;
+    public int OptimizerBeamWidth { get; set; } = 12;
+    public bool PreferDiversification { get; set; } = true;
+    public int FixtureLookaheadHours { get; set; } = 48;
     public decimal StakeIncrement { get; set; } = 50m;
     public bool AutomationEnabled { get; set; } = false;
     public bool RequireConfirmationOnRisk { get; set; } = true;
@@ -75,7 +79,6 @@ public sealed class StrategyConfig
         "Under2.5",
         "BTTS",
         "DoubleChance",
-        "DrawNoBet",
-        "Over1.5"
+        "DrawNoBet"
     ];
 }

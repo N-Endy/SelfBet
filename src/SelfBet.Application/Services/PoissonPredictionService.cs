@@ -90,9 +90,9 @@ public sealed class PoissonPredictionService(ICalibrationService calibration) : 
             "BTTS"     => g.Btts,
             "DoubleChance" => outcome switch
             {
-                "1X" => g.HomeWin + g.Draw,
-                "X2" => g.AwayWin + g.Draw,
-                "12" => g.HomeWin + g.AwayWin,
+                "1X" or "HOMEORDRAW" or "HOMEDRAW" => g.HomeWin + g.Draw,
+                "X2" or "DRAWORAWAY" or "DRAWAWAY" => g.AwayWin + g.Draw,
+                "12" or "HOMEORAWAY" or "HOMEAWAY" => g.HomeWin + g.AwayWin,
                 _ => 0
             },
             "DrawNoBet" => outcome switch

@@ -59,6 +59,20 @@ else
                     <label class="form-label">Max leg odds</label>
                     <InputNumber class="form-control" @bind-Value="config.MaxLegOdds" />
                 </div>
+                <div class="form-group">
+                    <label class="form-label">Fixture lookahead (hours)</label>
+                    <InputNumber class="form-control" @bind-Value="config.FixtureLookaheadHours" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Optimizer beam width</label>
+                    <InputNumber class="form-control" @bind-Value="config.OptimizerBeamWidth" />
+                </div>
+            </div>
+            <div class="form-row">
+                <label class="form-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <InputCheckbox @bind-Value="config.PreferDiversification" />
+                    Prefer more legs when odds are in range (diversification)
+                </label>
             </div>
         </div>
 

@@ -50,6 +50,7 @@ public sealed class SelfBetDbContext(DbContextOptions<SelfBetDbContext> options)
             e.Property(x => x.League).HasMaxLength(128);
             e.Property(x => x.Market).HasMaxLength(64);
             e.Property(x => x.Outcome).HasMaxLength(64);
+            e.Property(x => x.PredictionSource).HasMaxLength(32);
         });
 
         // ── PlacementAttempt ──────────────────────────────────────────────────

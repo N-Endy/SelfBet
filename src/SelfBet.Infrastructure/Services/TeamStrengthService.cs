@@ -26,6 +26,7 @@ namespace SelfBet.Infrastructure.Services;
 public sealed class TeamStrengthService(
     IHistoricalMatchRepository historicalRepo,
     ITeamStrengthRepository strengthRepo,
+    LeagueNameResolver leagueResolver,
     IMemoryCache cache,
     ILogger<TeamStrengthService> logger)
     : ITeamStrengthService
@@ -146,15 +147,16 @@ public sealed class TeamStrengthService(
         if (cache.TryGetValue<FixtureExpectation?>(key, out var cached))
             return cached;
 
-        var profile = await strengthRepo.GetLeagueProfileAsync(league, ct);
+        var canonicalLeague = leagueResolver.Resolve(league);
+        var profile = await strengthRepo.GetLeagueProfileAsync(canonicalLeague, ct);
         if (profile is null)
         {
             cache.Set<FixtureExpectation?>(key, null, ExpectationCacheTtl);
             return null;
         }
 
-        var home = await strengthRepo.GetAsync(league, homeTeam, ct);
-        var away = await strengthRepo.GetAsync(league, awayTeam, ct);
+        var home = await strengthRepo.GetAsync(canonicalLeague, homeTeam, ct);
+        var away = await strengthRepo.GetAsync(canonicalLeague, awayTeam, ct);
         if (home is null || away is null)
         {
             cache.Set<FixtureExpectation?>(key, null, ExpectationCacheTtl);

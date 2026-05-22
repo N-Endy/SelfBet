@@ -7,4 +7,11 @@
   <ItemGroup>
     <ProjectReference Include="..\SelfBet.Application\SelfBet.Application.csproj" />
   </ItemGroup>
+  <!-- Vendored for Docker publish only; SDK also emits blazor.web.js — exclude to avoid duplicate compressed asset keys. -->
+  <ItemGroup>
+    <Content Remove="wwwroot\_framework\blazor.web.js" />
+    <None Include="wwwroot\_framework\blazor.web.js" Link="wwwroot\_framework\blazor.web.js">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
 </Project>
