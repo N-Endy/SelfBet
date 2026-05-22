@@ -1,9 +1,13 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using SelfBet.Infrastructure.Persistence;
 
 #nullable disable
 
 namespace SelfBet.Infrastructure.Migrations;
 
+[DbContext(typeof(SelfBetDbContext))]
+[Migration("20260522120000_StrategyOptimizerFields")]
 public partial class StrategyOptimizerFields : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)

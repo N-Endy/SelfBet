@@ -305,6 +305,18 @@ namespace SelfBet.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int?>("AwaySampleSize")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("Edge")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("ExpectedValue")
+                        .HasColumnType("numeric");
+
+                    b.Property<int?>("HomeSampleSize")
+                        .HasColumnType("integer");
+
                     b.Property<DateTimeOffset>("KickoffUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -317,6 +329,9 @@ namespace SelfBet.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
+
+                    b.Property<decimal>("MarketImpliedProbability")
+                        .HasColumnType("numeric");
 
                     b.Property<Guid>("MatchId")
                         .HasColumnType("uuid");
@@ -336,6 +351,11 @@ namespace SelfBet.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
+
+                    b.Property<string>("PredictionSource")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
 
                     b.Property<Guid>("SlipId")
                         .HasColumnType("uuid");
@@ -368,6 +388,9 @@ namespace SelfBet.Infrastructure.Migrations
                         .HasMaxLength(2048)
                         .HasColumnType("character varying(2048)");
 
+                    b.Property<int>("FixtureLookaheadHours")
+                        .HasColumnType("integer");
+
                     b.Property<decimal>("MaxLegOdds")
                         .HasColumnType("numeric");
 
@@ -375,6 +398,9 @@ namespace SelfBet.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.Property<decimal>("MinEdgeThreshold")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal>("MinModelProbability")
                         .HasColumnType("numeric");
 
                     b.Property<decimal>("MinLegOdds")
@@ -388,6 +414,12 @@ namespace SelfBet.Infrastructure.Migrations
 
                     b.Property<decimal>("OddsRangeMin")
                         .HasColumnType("numeric");
+
+                    b.Property<int>("OptimizerBeamWidth")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("PreferDiversification")
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("RequireConfirmationOnRisk")
                         .HasColumnType("boolean");
