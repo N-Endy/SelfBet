@@ -49,12 +49,13 @@ public sealed class SportyBetFixtureCache(
         var pages = Enumerable.Range(1, MaxPages).ToList();
         using var gate = new SemaphoreSlim(MaxParallelPages);
 
+        var mapLock = new object();
         var tasks = pages.Select(async page =>
         {
             await gate.WaitAsync(ct);
             try
             {
-                return await FetchPageAsync(client, page, ts, ct);
+                return await FetchAndParsePageAsync(client, page, ts, fixturesById, mapLock, ct);
             }
             finally
             {
@@ -65,9 +66,9 @@ public sealed class SportyBetFixtureCache(
         var pageResults = await Task.WhenAll(tasks);
         var emptyStreak = 0;
 
-        foreach (var (page, tournaments) in pageResults.OrderBy(r => r.Page))
+        foreach (var (page, tournamentCount) in pageResults.OrderBy(r => r.Page))
         {
-            if (tournaments.Count == 0)
+            if (tournamentCount == 0)
             {
                 emptyStreak++;
                 if (emptyStreak >= 2) break;
@@ -75,15 +76,6 @@ public sealed class SportyBetFixtureCache(
             }
 
             emptyStreak = 0;
-            foreach (var (tournament, leagueName) in tournaments)
-            {
-                if (!tournament.TryGetProperty("events", out var events)) continue;
-                foreach (var ev in events.EnumerateArray())
-                {
-                    try { ParseEvent(ev, leagueName, fixturesById); }
-                    catch (Exception ex) { logger.LogTrace(ex, "Skipping event parse error on page {Page}", page); }
-                }
-            }
         }
 
         var oddsFixtures = fixturesById.Values
@@ -107,8 +99,13 @@ public sealed class SportyBetFixtureCache(
         };
     }
 
-    private async Task<(int Page, List<(JsonElement Tournament, string LeagueName)> Tournaments)> FetchPageAsync(
-        HttpClient client, int page, long ts, CancellationToken ct)
+    private async Task<(int Page, int TournamentCount)> FetchAndParsePageAsync(
+        HttpClient client,
+        int page,
+        long ts,
+        Dictionary<string, FixtureBuilder> fixturesById,
+        object mapLock,
+        CancellationToken ct)
     {
         var url = $"{BaseUrl}/api/ng/factsCenter/pcUpcomingEvents" +
                   $"?sportId={Uri.EscapeDataString(SoccerSportId)}" +
@@ -120,27 +117,41 @@ public sealed class SportyBetFixtureCache(
         {
             var response = await client.GetAsync(url, ct);
             if (!response.IsSuccessStatusCode)
-                return (page, []);
+                return (page, 0);
 
             var body = await response.Content.ReadAsStringAsync(ct);
             using var doc = JsonDocument.Parse(body);
             var root = doc.RootElement;
             if (!root.TryGetProperty("data", out var data) ||
                 !data.TryGetProperty("tournaments", out var tournaments))
-                return (page, []);
+                return (page, 0);
 
-            var list = new List<(JsonElement, string)>();
-            foreach (var tournament in tournaments.EnumerateArray())
+            var tournamentCount = 0;
+            lock (mapLock)
             {
-                list.Add((tournament, ExtractLeagueName(tournament)));
+                foreach (var tournament in tournaments.EnumerateArray())
+                {
+                    tournamentCount++;
+                    var leagueName = ExtractLeagueName(tournament);
+                    if (!tournament.TryGetProperty("events", out var events)) continue;
+
+                    foreach (var ev in events.EnumerateArray())
+                    {
+                        try { ParseEvent(ev, leagueName, fixturesById); }
+                        catch (Exception ex)
+                        {
+                            logger.LogTrace(ex, "Skipping event parse error on page {Page}", page);
+                        }
+                    }
+                }
             }
 
-            return (page, list);
+            return (page, tournamentCount);
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to fetch SportyBet page {Page}", page);
-            return (page, []);
+            return (page, 0);
         }
     }
 
