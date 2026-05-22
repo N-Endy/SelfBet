@@ -47,20 +47,7 @@ var app = builder.Build();
         {
             using var scope = app.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<SelfBetDbContext>();
-            await db.Database.MigrateAsync();
-            await db.Database.ExecuteSqlRawAsync(
-                """
-                ALTER TABLE "SlipLegs" ADD COLUMN IF NOT EXISTS "MarketImpliedProbability" numeric NOT NULL DEFAULT 0;
-                ALTER TABLE "SlipLegs" ADD COLUMN IF NOT EXISTS "Edge" numeric NOT NULL DEFAULT 0;
-                ALTER TABLE "SlipLegs" ADD COLUMN IF NOT EXISTS "ExpectedValue" numeric NOT NULL DEFAULT 0;
-                ALTER TABLE "SlipLegs" ADD COLUMN IF NOT EXISTS "PredictionSource" character varying(32) NOT NULL DEFAULT 'BookmakerFallback';
-                ALTER TABLE "SlipLegs" ADD COLUMN IF NOT EXISTS "HomeSampleSize" integer NULL;
-                ALTER TABLE "SlipLegs" ADD COLUMN IF NOT EXISTS "AwaySampleSize" integer NULL;
-                ALTER TABLE "StrategyConfigs" ADD COLUMN IF NOT EXISTS "FixtureLookaheadHours" integer NOT NULL DEFAULT 48;
-                ALTER TABLE "StrategyConfigs" ADD COLUMN IF NOT EXISTS "OptimizerBeamWidth" integer NOT NULL DEFAULT 12;
-                ALTER TABLE "StrategyConfigs" ADD COLUMN IF NOT EXISTS "PreferDiversification" boolean NOT NULL DEFAULT true;
-                ALTER TABLE "StrategyConfigs" ADD COLUMN IF NOT EXISTS "MinModelProbability" numeric NOT NULL DEFAULT 0;
-                """);
+            await StartupDatabaseMigration.ApplyAsync(db, startupLogger);
             last = null;
             break;
         }

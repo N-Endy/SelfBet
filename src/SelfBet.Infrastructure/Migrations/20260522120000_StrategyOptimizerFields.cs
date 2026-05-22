@@ -12,40 +12,23 @@ public partial class StrategyOptimizerFields : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
     {
-        migrationBuilder.AddColumn<int>(
-            name: "FixtureLookaheadHours",
-            table: "StrategyConfigs",
-            type: "integer",
-            nullable: false,
-            defaultValue: 48);
-
-        migrationBuilder.AddColumn<int>(
-            name: "OptimizerBeamWidth",
-            table: "StrategyConfigs",
-            type: "integer",
-            nullable: false,
-            defaultValue: 12);
-
-        migrationBuilder.AddColumn<bool>(
-            name: "PreferDiversification",
-            table: "StrategyConfigs",
-            type: "boolean",
-            nullable: false,
-            defaultValue: true);
-
-        migrationBuilder.AddColumn<decimal>(
-            name: "MinModelProbability",
-            table: "StrategyConfigs",
-            type: "numeric",
-            nullable: false,
-            defaultValue: 0m);
+        migrationBuilder.Sql(
+            """
+            ALTER TABLE "StrategyConfigs" ADD COLUMN IF NOT EXISTS "FixtureLookaheadHours" integer NOT NULL DEFAULT 48;
+            ALTER TABLE "StrategyConfigs" ADD COLUMN IF NOT EXISTS "OptimizerBeamWidth" integer NOT NULL DEFAULT 12;
+            ALTER TABLE "StrategyConfigs" ADD COLUMN IF NOT EXISTS "PreferDiversification" boolean NOT NULL DEFAULT true;
+            ALTER TABLE "StrategyConfigs" ADD COLUMN IF NOT EXISTS "MinModelProbability" numeric NOT NULL DEFAULT 0;
+            """);
     }
 
     protected override void Down(MigrationBuilder migrationBuilder)
     {
-        migrationBuilder.DropColumn(name: "FixtureLookaheadHours", table: "StrategyConfigs");
-        migrationBuilder.DropColumn(name: "OptimizerBeamWidth", table: "StrategyConfigs");
-        migrationBuilder.DropColumn(name: "PreferDiversification", table: "StrategyConfigs");
-        migrationBuilder.DropColumn(name: "MinModelProbability", table: "StrategyConfigs");
+        migrationBuilder.Sql(
+            """
+            ALTER TABLE "StrategyConfigs" DROP COLUMN IF EXISTS "FixtureLookaheadHours";
+            ALTER TABLE "StrategyConfigs" DROP COLUMN IF EXISTS "OptimizerBeamWidth";
+            ALTER TABLE "StrategyConfigs" DROP COLUMN IF EXISTS "PreferDiversification";
+            ALTER TABLE "StrategyConfigs" DROP COLUMN IF EXISTS "MinModelProbability";
+            """);
     }
 }

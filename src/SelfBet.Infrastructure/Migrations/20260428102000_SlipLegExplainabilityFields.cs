@@ -12,56 +12,28 @@ namespace SelfBet.Infrastructure.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<decimal>(
-                name: "Edge",
-                table: "SlipLegs",
-                type: "numeric",
-                nullable: false,
-                defaultValue: 0m);
-
-            migrationBuilder.AddColumn<decimal>(
-                name: "ExpectedValue",
-                table: "SlipLegs",
-                type: "numeric",
-                nullable: false,
-                defaultValue: 0m);
-
-            migrationBuilder.AddColumn<int>(
-                name: "AwaySampleSize",
-                table: "SlipLegs",
-                type: "integer",
-                nullable: true);
-
-            migrationBuilder.AddColumn<int>(
-                name: "HomeSampleSize",
-                table: "SlipLegs",
-                type: "integer",
-                nullable: true);
-
-            migrationBuilder.AddColumn<decimal>(
-                name: "MarketImpliedProbability",
-                table: "SlipLegs",
-                type: "numeric",
-                nullable: false,
-                defaultValue: 0m);
-
-            migrationBuilder.AddColumn<string>(
-                name: "PredictionSource",
-                table: "SlipLegs",
-                type: "character varying(32)",
-                maxLength: 32,
-                nullable: false,
-                defaultValue: "BookmakerFallback");
+            migrationBuilder.Sql(
+                """
+                ALTER TABLE "SlipLegs" ADD COLUMN IF NOT EXISTS "Edge" numeric NOT NULL DEFAULT 0;
+                ALTER TABLE "SlipLegs" ADD COLUMN IF NOT EXISTS "ExpectedValue" numeric NOT NULL DEFAULT 0;
+                ALTER TABLE "SlipLegs" ADD COLUMN IF NOT EXISTS "AwaySampleSize" integer NULL;
+                ALTER TABLE "SlipLegs" ADD COLUMN IF NOT EXISTS "HomeSampleSize" integer NULL;
+                ALTER TABLE "SlipLegs" ADD COLUMN IF NOT EXISTS "MarketImpliedProbability" numeric NOT NULL DEFAULT 0;
+                ALTER TABLE "SlipLegs" ADD COLUMN IF NOT EXISTS "PredictionSource" character varying(32) NOT NULL DEFAULT 'BookmakerFallback';
+                """);
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(name: "Edge", table: "SlipLegs");
-            migrationBuilder.DropColumn(name: "ExpectedValue", table: "SlipLegs");
-            migrationBuilder.DropColumn(name: "AwaySampleSize", table: "SlipLegs");
-            migrationBuilder.DropColumn(name: "HomeSampleSize", table: "SlipLegs");
-            migrationBuilder.DropColumn(name: "MarketImpliedProbability", table: "SlipLegs");
-            migrationBuilder.DropColumn(name: "PredictionSource", table: "SlipLegs");
+            migrationBuilder.Sql(
+                """
+                ALTER TABLE "SlipLegs" DROP COLUMN IF EXISTS "Edge";
+                ALTER TABLE "SlipLegs" DROP COLUMN IF EXISTS "ExpectedValue";
+                ALTER TABLE "SlipLegs" DROP COLUMN IF EXISTS "AwaySampleSize";
+                ALTER TABLE "SlipLegs" DROP COLUMN IF EXISTS "HomeSampleSize";
+                ALTER TABLE "SlipLegs" DROP COLUMN IF EXISTS "MarketImpliedProbability";
+                ALTER TABLE "SlipLegs" DROP COLUMN IF EXISTS "PredictionSource";
+                """);
         }
     }
 }
